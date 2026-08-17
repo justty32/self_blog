@@ -34,3 +34,16 @@ not claim that arbitrary renderer code lacks filesystem or build-time network
 access. The implementation remains trusted, pinned build tooling and must
 separately disable browser requests; the final SVG gate ensures that no remote
 reference reaches readers.
+
+## Selected implementation
+
+The passing spike uses the official `mermaid@11.16.1` browser bundle through
+`puppeteer-core@25.7.0`. It reuses an installed Chrome, Edge, or Chromium and
+does not download a browser from npm; CI may set `PUPPETEER_EXECUTABLE_PATH`.
+The page is placed offline, every page request is aborted, and the result is
+normalized to one inert, accessible, content-addressed SVG.
+
+Mermaid, Puppeteer, the browser, and their dependencies are build tools only.
+They are never copied to the site. In the accepted fixtures the reader-facing
+files are 12.5–15.1 kB SVGs with zero runtime JavaScript. See [RESULTS.md](RESULTS.md)
+for the measured evidence and the precise determinism boundary.

@@ -12,6 +12,8 @@
   "devDependencies": {
     "css-tree": "3.2.1",
     "jsep": "1.4.0",
+    "mermaid": "11.16.1",
+    "puppeteer-core": "25.7.0",
     "saxes": "6.0.0",
     "spdx-license-ids": "3.0.23"
   }

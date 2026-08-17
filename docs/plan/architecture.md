@@ -174,7 +174,7 @@ flowchart LR
 - 以 Astro Markdown 管線（unified）的 remark/rehype plugin 辨識 Mermaid fence，於 `astro.config` 的 `markdown.remarkPlugins`／`rehypePlugins` 註冊。Astro 沒有其他官方 Mermaid hook。
 - `markdown.syntaxHighlight.excludeLangs` 包含 `mermaid`，避免先被一般 highlighter 改寫。該選項有最低 Astro 版本需求，M0 固定版本時一併確認。
 - build step 以 `securityLevel: "strict"` 產生 content-hashed、尺寸已知的 SVG asset。
-- cache key 包含 diagram source、Mermaid 版本與 theme diagram tokens。
+- cache key 包含 diagram source、Mermaid 版本、renderer profile（設定／sanitize／serialize policy）、browser product/version、font-metric fingerprint 與 theme diagram tokens。不同 build toolchain 可以產生不同 bytes，但每份 SVG 都以自身 bytes 命名，不會命中錯誤的 content-addressed asset。
 - 語法錯誤或缺 `accTitle`/`accDescr` 直接讓 production build 失敗。
 - HTML 只引用完成的 SVG；沒有 Mermaid runtime、初始化 script 或 CDN request。
 
