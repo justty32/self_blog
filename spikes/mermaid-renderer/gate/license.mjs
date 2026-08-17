@@ -15,7 +15,21 @@ export const PROFILE_B_ALLOWED = Object.freeze([
   "CC0-1.0",
   "ISC",
   "MIT",
+  "Unlicense",
 ]);
+
+export const PINNED_LICENSE_EVIDENCE = Object.freeze({
+  "node_modules/khroma": Object.freeze({
+    version: "2.1.0",
+    resolved: "https://registry.npmjs.org/khroma/-/khroma-2.1.0.tgz",
+    integrity:
+      "sha512-Ls993zuzfayK269Svk9hzpeGUKob/sIgZzyHYdjQoAdQetRKpOLj+k/QQQ/6Qi0Yz65mlROrfd+Ev+1+7dz9Kw==",
+    license: "MIT",
+    artifactLicensePath: "license",
+    evidenceUrl:
+      "https://github.com/fabiospampinato/khroma/blob/v2.1.0/license",
+  }),
+});
 
 const allowed = new Set(PROFILE_B_ALLOWED);
 const canonicalIds = new Map(
@@ -203,6 +217,37 @@ function assertRootConsistency(packageJson, lockRoot) {
   }
 }
 
+function resolveLicense(locator, descriptor) {
+  if (typeof descriptor.license === "string" && descriptor.license.trim() !== "") {
+    return {
+      expression: descriptor.license.trim(),
+      evidence: { kind: "lockfile-metadata" },
+    };
+  }
+
+  const pinned = PINNED_LICENSE_EVIDENCE[locator];
+  if (!pinned) {
+    fail("MISSING_LICENSE", `${locator || "<root>"} has no license expression`);
+  }
+  for (const field of ["version", "resolved", "integrity"]) {
+    if (descriptor[field] !== pinned[field]) {
+      fail(
+        "LICENSE_EVIDENCE_MISMATCH",
+        `${locator}: pinned license evidence does not match ${field}`,
+        { field, expected: pinned[field], actual: descriptor[field] },
+      );
+    }
+  }
+  return {
+    expression: pinned.license,
+    evidence: {
+      kind: "pinned-artifact-evidence",
+      artifactLicensePath: pinned.artifactLicensePath,
+      evidenceUrl: pinned.evidenceUrl,
+    },
+  };
+}
+
 export function auditPackageLock(lockfile, packageJson, rawLockfile = "") {
   if (!lockfile || typeof lockfile !== "object" || Array.isArray(lockfile)) {
     fail("INVALID_LOCKFILE", "package-lock.json must contain an object");
@@ -242,13 +287,10 @@ export function auditPackageLock(lockfile, packageJson, rawLockfile = "") {
     if (descriptor.link === true) {
       fail("UNSUPPORTED_LOCAL_SOURCE", `Linked package is not allowed in the spike: ${locator}`);
     }
-    if (typeof descriptor.license !== "string" || descriptor.license.trim() === "") {
-      fail("MISSING_LICENSE", `${locator || "<root>"} has no license expression`);
-    }
-
+    const resolvedLicense = resolveLicense(locator, descriptor);
     let license;
     try {
-      license = evaluateProfileB(descriptor.license.trim());
+      license = evaluateProfileB(resolvedLicense.expression);
     } catch (error) {
       if (error instanceof LicenseGateError) {
         error.message = `${locator || "<root>"}: ${error.message}`;
@@ -277,7 +319,7 @@ export function auditPackageLock(lockfile, packageJson, rawLockfile = "") {
         peer: descriptor.peer === true,
         inBundle: descriptor.inBundle === true,
       },
-      license,
+      license: { ...license, evidence: resolvedLicense.evidence },
     });
   }
 
@@ -294,6 +336,9 @@ export function auditPackageLock(lockfile, packageJson, rawLockfile = "") {
       direct: inventory.filter(({ relationship }) => relationship === "direct").length,
       transitive: inventory.filter(({ relationship }) => relationship === "transitive").length,
       devOnly: inventory.filter(({ usage }) => usage === "dev-only").length,
+      attested: inventory.filter(
+        ({ license }) => license.evidence.kind === "pinned-artifact-evidence",
+      ).length,
       missing: 0,
       unknown: 0,
       denied: 0,

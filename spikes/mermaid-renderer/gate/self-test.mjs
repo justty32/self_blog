@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   LicenseGateError,
+  PINNED_LICENSE_EVIDENCE,
   assertNoShrinkwrap,
   auditPackageFiles,
   auditPackageLock,
@@ -63,7 +64,8 @@ function testLicenseExpressions() {
   assert.equal(evaluateProfileB("MIT").witness, "MIT");
   assert.match(evaluateProfileB("MIT AND ISC").normalized, /MIT AND ISC/u);
   assert.equal(evaluateProfileB("MIT OR GPL-3.0-only").witness, "MIT");
-  assertions += 3;
+  assert.equal(evaluateProfileB("Unlicense").witness, "Unlicense");
+  assertions += 4;
 
   expectError(LicenseGateError, "NOT_ALLOWLISTED", () => evaluateProfileB("MIT AND GPL-3.0-only"));
   expectError(LicenseGateError, "UNKNOWN_SPDX_ID", () => evaluateProfileB("MIT OR MadeUp-1.0"));
@@ -144,6 +146,41 @@ function testLockAudit() {
   });
   expectError(LicenseGateError, "LOCKFILE_VERSION", () =>
     auditPackageLock(changed.lockfile, changed.packageJson),
+  );
+
+  const khromaEvidence = PINNED_LICENSE_EVIDENCE["node_modules/khroma"];
+  const khromaPackage = {
+    name: "gate-khroma-evidence-test",
+    version: "0.0.0",
+    license: "MIT",
+    devDependencies: { khroma: "2.1.0" },
+  };
+  const khromaLock = {
+    name: khromaPackage.name,
+    version: khromaPackage.version,
+    lockfileVersion: 3,
+    packages: {
+      "": { ...khromaPackage },
+      "node_modules/khroma": {
+        version: khromaEvidence.version,
+        resolved: khromaEvidence.resolved,
+        integrity: khromaEvidence.integrity,
+        dev: true,
+      },
+    },
+  };
+  const khromaInventory = auditPackageLock(khromaLock, khromaPackage);
+  assert.equal(
+    khromaInventory.packages[1].license.evidence.kind,
+    "pinned-artifact-evidence",
+  );
+  assert.equal(khromaInventory.summary.attested, 1);
+  assertions += 2;
+
+  const mismatchedKhroma = structuredClone(khromaLock);
+  mismatchedKhroma.packages["node_modules/khroma"].integrity = "sha512-not-the-audited-artifact";
+  expectError(LicenseGateError, "LICENSE_EVIDENCE_MISMATCH", () =>
+    auditPackageLock(mismatchedKhroma, khromaPackage),
   );
 }
 

@@ -26,9 +26,14 @@ BSD-3-Clause
 0BSD
 Apache-2.0
 CC0-1.0
+Unlicense
 ```
 
 第三方保留原授權與必要 notice。SPDX `OR` expression 只有在能選到 allowlist 分支時通過；`AND` expression 的每一項都要通過。missing、unknown 或未列 license 一律失敗。人工例外必須另有 Accepted ADR，不能只改 validator allowlist。
+
+Mermaid spike 實測後依 [ADR-0001](adr/0001-mermaid-profile-b-evidence.md)
+加入 `Unlicense`，並為 npm metadata 缺漏的 `khroma@2.1.0` 建立綁定
+version、resolved URL 與 integrity 的單一 MIT 證據；其他 missing metadata 仍失敗。
 
 ### A — strict MIT-only（額外選擇）
 
