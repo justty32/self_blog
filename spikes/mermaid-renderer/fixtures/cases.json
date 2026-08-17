@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "valid": [
+    {
+      "id": "valid-flowchart",
+      "input": "valid-flowchart.mmd",
+      "title": "發文流程",
+      "description": "草稿經過檢查、建置，最後部署到 GitHub Pages。",
+      "expectedText": ["草稿", "檢查", "建置", "部署"]
+    },
+    {
+      "id": "unsafe-link-probe",
+      "input": "unsafe-link-probe.mmd",
+      "title": "外部連結安全測試",
+      "description": "流程圖包含外部連結語法，但輸出的靜態 SVG 不得保留可導覽連結。",
+      "expectedText": ["開始", "完成"]
+    }
+  ],
+  "invalid": [
+    {
+      "id": "missing-title",
+      "input": "missing-title.mmd"
+    },
+    {
+      "id": "missing-description",
+      "input": "missing-description.mmd"
+    },
+    {
+      "id": "invalid-syntax",
+      "input": "invalid-syntax.mmd"
+    }
+  ]
+}

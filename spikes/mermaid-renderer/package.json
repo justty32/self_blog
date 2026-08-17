@@ -1,0 +1,18 @@
+{
+  "name": "@self-blog/mermaid-renderer-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "npm run test:gate",
+    "test:gate": "node ./gate/self-test.mjs",
+    "verify:spike": "node ./gate/verify.mjs --renderer ./render.mjs --cases ./fixtures/cases.json --lockfile ./package-lock.json"
+  },
+  "devDependencies": {
+    "css-tree": "3.2.1",
+    "jsep": "1.4.0",
+    "saxes": "6.0.0",
+    "spdx-license-ids": "3.0.23"
+  }
+}
