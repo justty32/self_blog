@@ -12,6 +12,11 @@
 >
 > 接手實作的人請直接看 [第五節「交接給實作者」](#五交接給實作者)。
 
+> **2026-08-17 轉向說明：** 第一至四節記錄的是 Astro／Mermaid 方案的 R1
+> 歷史，不能再當作現行實作指示。屋主後續把 build-time 供應鏈縮減列為優先，
+> 並同意移除流程圖；現行決策改為 Hugo standard、無 npm、無 Mermaid，詳見
+> [ADR-0002](adr/0002-hugo-no-npm.md)。第五節已依新決策重寫。
+
 ---
 
 ## 一、已套用的修正
@@ -128,62 +133,61 @@ A、B、C 三組已在 R1 修正；D9–D13 已由屋主拍板並回填 [review-
 
 ## 五、交接給實作者
 
-以下是規格本身沒寫、但接手的人應該先知道的事。
+以下是規格以外的實作邊界。現行規格以 [README](README.md) 與其連結文件為準。
 
-### 1. M1 與 M2 可以對調
+### 1. 先清掉已作廢的供應鏈，再建立網站
 
-[milestones.md](milestones.md) 把 workflows snapshot（M1）排在 Astro 骨架（M2）之前，但 **M2 完全不依賴 workflows 授權**。如果想現在就開始寫程式，不必等上游補 LICENSE：先做 M2/M3，M1 等 gate 過了再插進來。
+Mermaid spike 已完成它的研究目的，但 [ADR-0002](adr/0002-hugo-no-npm.md) 決定
+正式網站不使用它。先用一個獨立 cleanup commit 把 spike 從現行工作樹移除；Git
+歷史仍保存原始證據。這一筆不能和 Hugo 功能混在一起。
 
-只有一個順序限制要守住：M1 的 `AGENTS.md` 只能引用當時已存在的 verifier，改成 `npm run verify` 必須和建立 npm scripts 在同一個 commit。
+Hugo 必須使用官方 `v0.165.0` standard artifact，先驗 checksum 再執行。不要使用
+package manager、`latest`、extended、theme、遠端 Hugo module 或 npm。
 
-### 2. 三個版本相依的斷言，安裝當下要實測
+### 2. 安裝當下先證明三個 Hugo 行為
 
-計畫在這三處依賴特定 Astro 行為。**不要相信文件，也不要相信 AI 的記憶**，用實際安裝的版本跑一次：
+不要把文件或記憶當成完成證據。第一個 Hugo gate 要以最小 fixture 實測：
 
-| 斷言 | 位置 | 賭錯的後果 |
-|---|---|---|
-| `BASE_URL` 帶尾斜線 | [deployment.md](deployment.md#3-canonicalrss-與-sitemap) §1、§3 | canonical/RSS/sitemap 靜默丟掉 base，只有部署後才 404 |
-| glob loader 支援 `deferRender` | [architecture.md](architecture.md) §2 | draft 會被預先 render，asset 外洩到 artifact |
-| `markdown.syntaxHighlight.excludeLangs` | [architecture.md](architecture.md) §5 | Mermaid fence 先被 highlighter 改寫，plugin 抓不到 |
+| 斷言 | 賭錯的後果 |
+|---|---|
+| `.RelPermalink` 與 CSS resource URL 在 production build 都只含一次 `/self_blog/` | 本機正常、Pages 資產 404 |
+| production 不 render draft，且未被公開內容引用的 global image resource 不進 `public/` | 草稿文字或圖片外洩 |
+| Markdown image render hook 能把作者寫的 `images/<post>/...` logical resource path 解析成帶 project base 的 URL | 所有文章截圖在 Pages 失效 |
 
-第一項最重要——它是 R1 修掉的 A2 那個 bug 的根源。規格已經要求把它寫成 assertion，請**先寫 assertion 再寫功能**。
+gate commit 只加入 fixture、驗證器與明確的 red evidence；下一個 commit 才加入讓它
+轉綠的 Hugo config／template。不要在同一筆 commit 改 gate 與被測功能。
 
-### 3. Mermaid renderer 是最大的未知數
+### 3. 使用 Hugo 原生內容模型
 
-它被推遲到 M0 決定，但 build-time 產 SVG 通常要拉 headless Chromium。CI 時間、穩定性、以及 license profile A 的可行性全部卡在這裡。
+不要重建一套 content collection 或 taxonomy：文章使用 Hugo 的 `date`、`lastmod`、
+`draft`、`tags`（以及需要時的原生 `categories`）；tag/category routes 由 Hugo 產生。
+`/archive/` 只以 `GroupByDate "2006-01"` 顯示月份分組與錨點，不建立 month taxonomy，
+也不先做 `/archive/YYYY/MM/` routes。
 
-**建議第一件事就做這塊的 spike**，不要等到 M3 才發現選型錯誤——那時候 frontmatter、route 與 budget 都已經蓋在上面了。
+一般資訊頁同樣是 Markdown。新增 About／Contact 不應要求修改 layout registry。
 
-### 4. 圖片的 rehype plugin 沒有實作驗證
+### 4. 圖片只走 Hugo resource 與 render hook
 
-D13 的「讀本地檔、注入 width/height、超標就 fail」概念上直接，但它是整份計畫裡唯一一段沒有現成慣例可抄的機制。預留除錯時間，並且記得它同時扛著三個保證：CLS、byte budget、draft asset 排除。
+圖片來源維持和文章分離的 `media/<post-slug>/`，以本機 filesystem mount 映射為
+global resources；禁止 remote resource。檔案 gate 與 render hook 必須在輸出 URL 前驗證
+來源存在、alt 非空、尺寸及檔案大小，並輸出 width、height、lazy loading。只有呼叫
+`.RelPermalink` 的公開引用才發布，因此 draft-only 與 orphan 圖片都不應進 artifact。
 
-### 5. 最需要防的失敗模式：改 gate 而不是改程式
+### 5. 作者只有兩個正式入口
 
-這份計畫有大量「這種情況就讓 build 失敗」的規則。實作時撞到紅燈，最省事的做法永遠是把檢查放寬——而放寬之後沒有人會發現保證已經不成立了。
+- 預覽：執行一個 PowerShell command，啟動含 draft 的本機 Hugo server。
+- 發布：執行一個 PowerShell command，驗證內容與 production artifact，只 stage
+  `content/`、`media/` 內明確允許的變更，建立 commit 並 push；main workflow 再以同一
+  gate 重建並部署。腳本不得 stage 其他 working-tree 變更，也不得提交 `public/`。
 
-硬規矩兩條：
+最終 `docs/AUTHORING.md` 必須真的走過這兩條路徑後才可宣稱完成。
 
-1. **gate 要在它所守護的功能之前先寫好。**
-2. **永遠不准在同一個 commit 裡同時改 gate 和讓它失敗的程式。**
+### 6. 不能放寬的四條骨架
 
-真的需要放寬時，走 ADR，不要改 validator 的 allowlist 了事。
+- production artifact 是普通 HTML、CSS 與被引用圖片，client JavaScript 為 0。
+- `baseURL` 含 `/self_blog/` 尾斜線；站內 URL 只能經 Hugo URL API 產生。
+- draft 的內容與素材完全不進 `public/`。
+- gate 先於功能；需要放寬 contract 時先寫 ADR，不能順手改 validator。
 
-### 6. 可以砍的與不能動的
-
-進度落後時，**可以 descope**：靜態分頁、`plain` theme、Lighthouse 分數目標、RSS。砍掉請明說並更新 Done when，不要靜默跳過。
-
-**不能動**的是四條互相支撐的骨架：
-
-- `getPublishedPosts()` 作為公開內容的單一投影來源
-- 0-JS gate（含 HTML/SVG 解析，不只算 network request）
-- base 尾斜線與「`/self_blog/` 恰好一次」
-- draft 的內容與 asset 完全不進 artifact
-
-少任何一條，產生的 bug 都是「本機正常、部署後才看得到」的那一類。
-
-### 7. 關於這份計畫的重量
-
-對一個個人 blog 來說偏重，這點無須否認。但重的地方都重在**驗證**而不是**功能**——MVP 的功能面其實很小。這個比例是刻意的：功能少而確定，好過功能多而不知道有沒有壞。
-
-如果接手的人想簡化，請優先簡化功能範圍，不要優先簡化驗證。
+這是一個小型個人 blog。先用 Hugo 原生功能完成文章、taxonomy、月份 archive、一般
+頁面與圖片；不要為了「可能以後需要」加入 plugin、client search、流程圖或 framework。

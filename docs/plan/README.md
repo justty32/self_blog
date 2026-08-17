@@ -1,80 +1,73 @@
-# self_blog 建置規劃（審查入口）
+# self_blog 建置規劃
 
-狀態：`Proposed`  
-規劃日期：2026-08-17  
-修訂：2026-08-17（審查回饋 R1，見 [OPUS_ADVICE.md](OPUS_ADVICE.md)）  
-目標倉庫：`https://github.com/justty32/self_blog`  
-預定網站：`https://justty32.github.io/self_blog/`
+狀態：`Proposed`
+日期：2026-08-17
+正式決策：[ADR-0002：採用 Hugo standard、移除 npm 與 production Mermaid](adr/0002-hugo-no-npm.md)
+網站：`https://justty32.github.io/self_blog/`
 
-> 本輪只產出規劃：不建立網站、不安裝套件、不新增 Actions，也不複製本機 workflows checkout。
+> 本文件只描述方案與執行順序；在審查完成並提交計畫文件前，不建立網站、不複製 workflows、不安裝套件。
 
-## 一句話方案
+## 方案摘要
 
-使用 Astro + TypeScript，把純 Markdown、技術截圖與 Mermaid 流程圖在 build-time 轉成 GitHub Pages 可直接提供的靜態檔；以 semantic design tokens 隔離外觀，預設採藍／青綠輕科幻主題。MVP 對閱覽者只傳 HTML、小型 CSS 與當頁圖片／SVG，全部來自本站 origin，client JavaScript 預算為 **0 bytes**。
+使用 Hugo `v0.165.0` Standard 的固定 binary，在 build-time 將 Markdown 轉成可直接由 GitHub Pages 提供的普通 HTML。Linux amd64 checksum 為 `5c3a37a5450b3e386e5b75a87a790fea2d04a796d75e171216c80ef48a32b432`，Windows amd64 checksum 為 `bdd9cc7837a42389067b2d0df7858d5878ceddef21307c2dd27fa10885fbbcf9`；實作時仍須從同一 release 的 `checksums.txt` 驗證。
+
+本機作者流程正式支援 Windows amd64 與 Linux amd64。兩邊都使用 PowerShell 7 的同一條
+`pwsh -NoProfile -File scripts/publish.ps1`，不維護行為可能分歧的第二套 Bash 腳本；CI
+必須在 Windows 與 Ubuntu matrix 跑同一批 gate。腳本不得依賴磁碟機代號、反斜線或
+大小寫不敏感檔案系統。
+
+正式網站不依賴 npm、Node、package lock、Hugo theme、遠端 module、git submodule 或 client JavaScript；也不承諾 production 流程圖。現有 `spikes/mermaid-renderer/` 是前一方案的歷史研究，須在第一個 Hugo 功能前以獨立 cleanup commit 移出工作樹；Git 歷史仍保留證據。訪客只取得 HTML、CSS、favicon，以及文章實際引用的本地技術截圖。文章來源可以保留 Markdown，因為 parser 只在 build-time 使用。
+
+正式內容包括：文章與 draft、Hugo 原生 tags／categories、`/archive/` 的單一月份索引（以 `YYYY-MM` anchors 分組）、一般 Markdown 頁面（如 About／Contact）、RSS、sitemap、404、GitHub Pages project-site base `/self_blog/`，以及以 semantic tokens 實作的 CSS theme。文章使用 Hugo 原生 content model；`title`、`description`、`date`、`tags` 必填，`lastmod`、`draft`、`categories` 可選，且省略 `draft` 時沿用 Hugo 預設 `false`。不另造 `publishedAt`、自訂 taxonomy 或 tag slug。圖片來源放在 `media/`，只允許技術截圖；author guide 交付於 `docs/AUTHORING.md`。
 
 ## 需求對照
 
-| 需求 | 規劃落點 | 完成證據 |
+| 需求 | 規劃落點 | 驗收證據 |
 |---|---|---|
-| 個人靜態 blog | Astro static output | `dist/` 不需 server runtime |
-| GitHub Pages | project-site base `/self_blog/` + Pages Actions | main deployment 與深層網址 smoke test |
-| Markdown 文章 | Content Collection 只收 `.md` | 新文章自動進列表、route、tag、RSS |
-| 一般頁面與作者指南 | `pages` Markdown collection + `docs/AUTHORING.md` | 不改元件即可新增 About／Contact 類頁面；fresh-clone walkthrough 可重現 |
-| 依標籤／發布月份尋找 | `/tags/`、`/tags/<tag>/`、`/archive/`、`/archive/YYYY/MM/` | 每個索引皆為可直達、可分享的靜態 HTML |
-| 圖片與流程圖 | 僅技術截圖，來源在 `media/<slug>/`、文章只寫 `/images/...`；Mermaid build-time static SVG | 單檔大小/尺寸 gate、只部署被引用的圖、第三方 request 為 0；閱覽端不載 Mermaid/runtime JS |
-| 非常輕量 | 0 JS、system fonts、無 analytics/CDN/client router | byte/request budget 與 network log |
-| 藍／初音感、科幻但好讀 | `miku-cyber` theme + `plain` 對照 theme | WCAG AA、固定 viewport 視覺審查 |
-| 外觀常更換 | semantic token contract | 切 theme 不改文章/layout/component markup |
-| MIT | 自有程式、文章、圖表與素材 MIT；第三方明確稽核 | LICENSE、inventory、notices、license gate |
-| 非侵入式 workflows | 根部兩個入口，其餘固定快照進 `wf/` | fresh clone 無本機路徑依賴；上游 worktree 未改 |
+| 靜態 blog／Pages | Hugo static build、`/self_blog/` | artifact、部署後深層 URL smoke test |
+| Markdown 文章 | Hugo 原生 `content/` + `date`／`lastmod`／`draft`／`tags` | build 後只剩 ordinary HTML；draft 不進 artifact |
+| 導航 | 原生 tags／categories、`/tags/`、term pages、`/archive/#YYYY-MM` | 每個連結可直接開啟，無瀏覽器端篩選 |
+| 一般頁面 | `content/<page>.md` | 只新增 Markdown 即產生頁面 |
+| 圖片 | `media/` 的本地技術截圖 | 只發布公開文章引用的檔案；尺寸／大小 gate |
+| 外觀 | 自有 CSS、semantic tokens、藍／青綠輕科幻 theme | 無 JS 換膚；響應式與無障礙檢查 |
+| 低供應鏈風險 | 固定 Hugo binary、固定 Actions SHA、無 npm | checksum、license inventory、artifact scan |
+| workflows | 只導入已授權且 pin 的精簡 snapshot | upstream license、notice、manifest、可回滾證據 |
 
 ## 文件地圖
 
-| 文件 | 審查重點 |
+| 文件 | 用途 |
 |---|---|
-| [architecture.md](architecture.md) | 技術棧、內容 contract、主題、build-time Mermaid、輕量 budget、功能範圍 |
-| [deployment.md](deployment.md) | `/self_blog/` base、URL contract、GitHub Pages workflow、artifact 與 404 |
-| [workflow-import.md](workflow-import.md) | `C:\code\mine\workflows` 的 allowlist、適配、provenance、更新與回滾 |
-| [licensing.md](licensing.md) | MIT 邊界、第三方 profile、workflows 授權 gate 與 notice |
-| [milestones.md](milestones.md) | M0–M5、逐階段 Done when、證據格式與風險 |
-| [review-checklist.md](review-checklist.md) | 審查者勾選決策、記錄異議與 M0 sign-off 的一頁清單 |
-| [OPUS_ADVICE.md](OPUS_ADVICE.md) | R1 審查發現與決策理由；**接手實作前先看第五節「交接給實作者」** |
-
-## 已知現況
-
-- `self_blog` 的 `main` 與 `origin/main` 一致；規劃開始時只有標準 MIT `LICENSE`。
-- 尚無框架、文章、套件、Actions 或 Pages 設定。
-- remote 是 `justty32/self_blog`，所以無 custom domain 時是 project site：`https://justty32.github.io/self_blog/`。
-- workflows 盤點版本是 `7e7d20bb4d30271f8369acad5f85a267d66e9be1`。
-- 該 workflows commit 沒有 LICENSE、SPDX 或其他授權聲明，因此現在不能開始 vendoring。
-
-## 預設決策
-
-審查者若無反對意見，後續採用：
-
-1. Astro + TypeScript + npm + Node 24 LTS，不加 React/Vue/Tailwind/CMS。
-2. 無 custom domain，正式 base 為 `/self_blog/`。
-3. 純 Markdown；截圖來源在 `media/<slug>/`，文章只寫 `/images/...` 連結，build 只複製公開文章引用到的檔案；Mermaid build-time static SVG。無 cover、無裝飾圖、無 OG image。
-4. MVP 全站 0 client JS，不用 web font、analytics、CDN runtime、client router 或 runtime theme switch。
-5. `miku-cyber` 是預設 build-time theme，`plain` 用來證明視覺解耦；兩者各自提供 light/dark 值，由 `prefers-color-scheme` 決定，不做讀者切換器。
-6. workflows 採 kernel + dev + knowledge/write 的精簡 snapshot，其餘按需求成長。
-7. 所有自有程式、文章與自製素材 MIT；第三方預設採明列 permissive allowlist並保留原授權。
-
-## M0 前不能略過的 gate
-
-1. **workflows 授權**：上游必須先新增 scope 足夠的 MIT LICENSE，再 pin 新 commit；現有 `7e7d20b...` 不可複製。
-2. **第三方授權 profile**：預設是「自有產物 MIT + 明列 permissive third-party」；若要求連 transitive dependency 都只能 MIT，須明確改選 strict profile並重新驗證技術棧。
-3. **審查記錄**：接受本規劃時記錄 reviewer、日期、plan commit SHA、license profile 與 custom-domain 決策，再把狀態改為 `Accepted`。
+| [architecture.md](architecture.md) | Hugo 結構、內容 contract、路由、圖片、CSS 與輸出限制 |
+| [deployment.md](deployment.md) | Pages workflow、`/self_blog/` URL、artifact 與部署驗證 |
+| [workflow-import.md](workflow-import.md) | workflows allowlist、snapshot、provenance、更新與回滾 |
+| [licensing.md](licensing.md) | Hugo／Actions／workflows／素材的授權邊界與 gate |
+| [milestones.md](milestones.md) | 里程碑、執行證據與風險 |
+| [review-checklist.md](review-checklist.md) | 可簽核的需求、供應鏈、外部 gate 與 commit 規則 |
+| [OPUS_ADVICE.md](OPUS_ADVICE.md) | 審查理由；交接時先讀第五節，但規格以本目錄的正式文件為準 |
+| [adr/0002-hugo-no-npm.md](adr/0002-hugo-no-npm.md) | 轉向 Hugo 的權威決策；[ADR-0001](adr/0001-mermaid-profile-b-evidence.md) 僅為歷史 spike |
 
 ## 執行順序
 
 ```text
-M0 審查／授權 gate
-  → M1 非侵入式 workflows snapshot
-  → M2 可部署的 0-JS 垂直切片
-  → M3 完整 Markdown／圖片／標籤／月份 archive／靜態 Mermaid 管線
-  → M4 可換膚與無障礙
-  → M5 上線硬化與交接
+1. 審查本計畫，確認 URL、license profile 與 Hugo checksum
+2. 將計畫／ADR／審查記錄先提交，取得 plan commit SHA
+3. 寫好並獨立提交 site gate（checksum、license、artifact／0-JS 驗證）；workflows gate 可維持 Deferred
+4. gate 通過後，才建立 Hugo 最小可部署垂直切片
+5. 分別加入原生 content model、tags／categories、月份 anchors、一般頁面、圖片與 CSS theme
+6. 完成 Pages、效能／無障礙、授權 inventory 與 author guide，部署驗證
 ```
 
-各階段的命令、fixture 與證據要求見 [milestones.md](milestones.md)。
+第 3 步的 gate 必須先於它保護的功能。禁止在同一 commit 同時修改 gate，及修改後會讓該 gate 失敗的程式；若要放寬規則，必須另立並接受 ADR。workflows upstream 未補足 scope 足夠的 MIT LICENSE 並產生可 pin 的新 commit 前，只能停留在規劃／其他不依賴該 snapshot 的工作，不得導入 workflows。
+
+### M0 前置決定
+
+- `custom domain`：無；正式 base 是 `/self_blog/`。
+- license profile：自有內容採 MIT；第三方保留原授權，採明列 permissive allowlist。
+- 流程圖：不在 production scope；ADR-0001 的 renderer 與 npm 證據不構成正式依賴。
+- 所有 client JavaScript、remote resource、theme/module 依賴均為非目標。
+
+各階段的命令與 evidence matrix 見 [milestones.md](milestones.md)；正式實作開始前必先完成 [review-checklist.md](review-checklist.md) 的 sign-off 條件。
+
+### 一鍵發布流程
+
+作者只需準備 Markdown 與 `media/` 中被文章引用的截圖，執行 `pwsh -NoProfile -File scripts/publish.ps1`。只有一個變更的 content unit 時腳本會自動選取；有多個時必須以 `-Content` 指定本次文章／頁面。命令先檢查 front matter、圖片引用、draft／路由與 artifact gate，再只 stage 該 content unit 與其專屬 `media/<post>/` 下的變更（包含刪除；留下的檔案必須都有引用）；作者確認後以 scoped commit／push 送出。GitHub Actions 重新以固定 Hugo build／verify 並部署 Pages。Hugo 的 `public/` 是 build output，必須被 `.gitignore` 排除，永不進 git、commit 或 push。

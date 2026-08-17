@@ -1,6 +1,6 @@
 # ADR-0001：Mermaid spike 的 Profile B 授權證據
 
-- 狀態：Accepted
+- 狀態：Superseded（歷史 spike；正式實作由 [ADR-0002](0002-hugo-no-npm.md) 取代）
 - 日期：2026-08-17
 - 範圍：僅 M0 Mermaid renderer spike 的第三方建置工具
 - 依據：[授權規劃](../licensing.md)、[OPUS 交接 §5](../OPUS_ADVICE.md#五交接給實作者)

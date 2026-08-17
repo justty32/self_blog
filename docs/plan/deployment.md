@@ -1,158 +1,300 @@
-# GitHub Pages 與 URL 規劃
+# GitHub Pages 與 URL／發布規劃
 
 ← [規劃入口](README.md)｜[架構](architecture.md)｜[里程碑](milestones.md)
 
-## 1. Project-site base 是架構條件
+## 1. 正式輸出與 project-site base
 
-`self_blog` 不是 `justty32.github.io` 根站；無 custom domain 時正式網址是：
+正式網址是：
 
 ```text
 https://justty32.github.io/self_blog/
 ```
 
-Astro 初始設定等價於：
+正式建置使用 Hugo **v0.165.0 standard edition**。版本、作業系統與 SHA-256
+checksum 必須固定在 CI 設定；不得使用浮動 `latest`、第三方 Hugo action、Hugo
+theme 或遠端 Hugo module。專案不包含 `package.json`、npm、Node、Mermaid 或
+任何 client-side JavaScript。
 
-```text
-site: https://justty32.github.io
-base: /self_blog
-output: static
-trailingSlash: always
-build.format: directory
+`hugo.toml` 的 URL 基線：
+
+```toml
+baseURL = 'https://justty32.github.io/self_blog/'
+publishDir = 'public'
+locale = 'zh-Hant-TW'
+timeZone = 'Asia/Taipei'
+relativeURLs = false
+canonifyURLs = false
 ```
 
-`base` 在設定檔寫成不帶尾斜線的 `/self_blog`，但**程式碼一律只透過 `import.meta.env.BASE_URL` 取用，且必須假設它帶尾斜線**。M2 的第一個 assertion 就是 `import.meta.env.BASE_URL.endsWith("/")`；若實作當時的 Astro 版本沒有補上尾斜線，則在 `src/config/site.ts` 匯出一個保證帶尾斜線的 `BASE` 常數，全站改用它。原因見 [§3](#3-canonicalrss-與-sitemap)。
+`baseURL` 必須包含尾斜線。模板使用 `.RelPermalink`、`.Permalink`、`relURL`
+與 `absURL`；不得散落手寫 `/self_blog/`，也不得產生未帶 project base 的
+root-relative URL。`relativeURLs` 保持關閉，避免 Hugo 的粗略 post-processing
+改寫文章內容中的 URL。
 
-不設定或安裝任何 adapter。`output: static` 只代表預設 prerender，本專案再加兩個強制條件：禁止 `export const prerender = false`，且 `posts/[slug]`、`tags/[tag]`、`archive/[year]/[month]` 都必須由 `getStaticPaths()` 完整列舉。驗證同時拒絕 server adapter、server entry、server manifest 與 runtime。
+## 2. 來源結構與 URL contract
 
-本機 build 使用這組預設；正式 Pages job 以 `actions/configure-pages` 的 `origin`、`base_path` 覆蓋同一組 build-time 設定。該 action 只提供／驗證 metadata，不會啟用 Pages，也不會自動修改 Astro。
+文章使用 leaf bundle，並以 Hugo 原生 `:contentbasename` 產生 URL；一般頁面直接放在
+content root，沿用 Hugo 的檔名路由。兩者都不要求 `slug` frontmatter，也不自訂 slug
+normalization：
 
-因為 CI 會覆蓋，verify 與 smoke test 不得各自寫死 `/self_blog/`：它們從 build 實際採用的同一個設定來源取得 base，只在單一處斷言「解析後的 base 等於 `/self_blog/`」。否則覆蓋值與檢查值一旦分歧，verify 會變成假證據。
+```text
+content/
+  posts/
+    2026/
+      first-post/
+        index.md        -> /self_blog/posts/first-post/
+  about.md              -> /self_blog/about/
+  contact.md            -> /self_blog/contact/
+media/
+  first-post/
+    terminal.webp
+layouts/
+static/
+```
 
-未來若改 custom domain，程式面集中改 `site` 與 `base`，營運面另完成 Pages Settings、DNS 與網域驗證；MVP 不包含此工作。
+```toml
+[permalinks.page]
+posts = '/posts/:contentbasename/'
+```
 
-## 2. URL contract
-
-預定 route：
+預定輸出：
 
 ```text
 /self_blog/
 /self_blog/posts/
-/self_blog/posts/<slug>/
+/self_blog/posts/<contentbasename>/
+/self_blog/<contentbasename>/
 /self_blog/archive/
-/self_blog/archive/<YYYY>/<MM>/
 /self_blog/tags/
-/self_blog/tags/<tag-slug>/
-/self_blog/images/<slug>/<file>
-/self_blog/rss.xml
-/self_blog/sitemap-index.xml
-/self_blog/sitemap-0.xml
-/self_blog/licenses/
+/self_blog/tags/<term>/
+/self_blog/categories/              # 至少一篇公開文章使用 categories 時
+/self_blog/categories/<term>/       # 同上
+/self_blog/images/<post>/<file>
+/self_blog/index.xml
+/self_blog/sitemap.xml
 /self_blog/404.html
 ```
 
-Astro／TypeScript component 只能使用 base-aware helper 或 `import.meta.env.BASE_URL`。普通 `.css` 無法插值該環境變數；CSS 內資產必須使用 module-relative URL 交給 Vite 重寫，或由 Astro markup 傳入已完成的 base-aware URL。禁止散落未處理的 `href="/..."`、`src="/..."`、`srcset` 或 `url(/...)`。
+月份只有 `/archive/` 內的 `YYYY-MM` 分組與 anchor；不建立月份 frontmatter、月份
+taxonomy 或 `/archive/YYYY/MM/` 動態頁。
 
-純 Markdown 作者使用 logical root URL：
+## 3. Native content contract
+
+文章只使用 Hugo 原生欄位：
+
+```yaml
+---
+title: 第一篇文章
+description: 可用於列表與 head 的摘要
+date: "2026-08-17"
+lastmod: "2026-08-18"
+draft: false
+tags:
+  - hugo
+categories:
+  - tooling
+---
+```
+
+`title`、`description`、`date`、`tags` 是文章必填；`draft`、`lastmod` 與
+`categories` 可省略，`draft` 省略時採 Hugo 原生預設 `false`。頁面至少需要
+`title` 與 `description`；`draft` 同樣可省略並預設 `false`。若欄位存在，
+validation 仍檢查 `draft` 是 boolean。不新增 `publishedAt`、`updatedAt`、`month`
+或自訂 taxonomy 欄位。Hugo template validation 用 `errorf` 檢查必要欄位、原生
+日期零值、`lastmod >= date`、tags/categories 的陣列與非空字串；不在 PowerShell
+重寫 YAML parser。
+
+`date` 的解析與排序交給 Hugo；作者指南要求使用 `YYYY-MM-DD`。若未來需要驗證
+原始 YAML 的引號或字面格式，另立獨立 gate，不在模板中複製 Hugo 日期解析器。
+
+不另寫 taxonomy 設定；直接沿用 Hugo 預設的 `tags` 與 `categories`。不對 term 做
+自訂 lower-case、Unicode normalization、percent-encoding 或別名
+改寫；路徑 collision 由 Hugo 的 `--printPathWarnings --panicOnWarning` 擋下。
+
+## 4. `media/` local mount 與圖片 gate
+
+`media/` 是 repo 頂層的本地來源，不是 `static/`。Hugo module mount 將它掛到
+global assets 的 `images/` 位置；這是 local mount，不是遠端 module：
+
+```toml
+[[module.mounts]]
+source = 'assets'
+target = 'assets'
+[[module.mounts]]
+source = 'content'
+target = 'content'
+[[module.mounts]]
+source = 'layouts'
+target = 'layouts'
+[[module.mounts]]
+source = 'static'
+target = 'static'
+[[module.mounts]]
+source = 'media'
+target = 'assets/images'
+```
+
+文章使用本地 logical path，例如：
 
 ```markdown
-[另一篇](/posts/other-slug/)
+![驗證命令的終端機輸出](images/first-post/terminal.webp)
 ```
 
-build-time Markdown transformer 只對 internal logical URL 加上恰好一次 `BASE_URL`；`#anchor`、`mailto:` 與完整協定 URL 不改。文章的 `/images/...` 圖片連結走的是同一條 transformer，不需要另設機制。直接寫 `/self_blog/...` 視為重複 base 並讓檢查失敗。
+自訂 `layouts/_default/_markup/render-image.html` 只接受 local resource：
 
-## 3. Canonical、RSS 與 sitemap
+- `http:`, `https:`, `//`, root-relative、`..`、query 與 fragment destination
+  直接 `errorf`；一般外部 `<a href>` 不受此規則限制。
+- 以 `resources.Get` 取得 mount 後的 resource；不存在即失敗。
+- `.PlainText` 必須非空。
+- 只接受 `.png`、`.jpg`、`.jpeg` 或 `.webp`；`reflect.IsImageResourceWithMeta` 必須為真，並成功取得正整數
+  `.Width`、`.Height`，否則以 `errorf` 讓 build 失敗。
+- PowerShell 檔案 gate 以來源檔實際 byte length 檢查不得超過 200 KiB；Hugo
+  validation partial 檢查最長邊不得超過 1600px。
+- 呼叫 `.RelPermalink` 時只發布真正被文章引用的 resource，輸出路徑是
+  `/images/<post>/<file>`，並附 `loading="lazy"`、`decoding="async"`。
 
-所有絕對 URL 由同一組 helper 產生，而 helper 的前置條件是 base **帶尾斜線**：
+validation build 另掃描所有 mounted image resource，因此孤兒檔也會接受尺寸與
+大小檢查；production artifact 則必須證明 `public/images/` 與生成 HTML 的圖片
+引用集合完全相等。`media/` 本身、draft-only 圖片與未引用圖不得進 `public/`。
 
-```text
-BASE          = ensureTrailingSlash(import.meta.env.BASE_URL)   // "/self_blog/"
-canonicalRoot = new URL(BASE, context.site)                     // "https://justty32.github.io/self_blog/"
-absolute(p)   = new URL(stripLeadingSlash(p), canonicalRoot)
+## 5. Build modes 與單一品質入口
+
+`public/` 永遠是可刪除、可重建的 ignored output，不得提交 Git。兩種 build 都
+指定明確 destination，且只在 repo 內的已知輸出目錄使用 `--cleanDestinationDir`：
+
+```powershell
+# 驗證全部內容，包括 draft、future、expired
+hugo --environment validation --buildDrafts --buildFuture --buildExpired `
+  --cleanDestinationDir --destination .hugo-validation `
+  --panicOnWarning --printPathWarnings
+
+# 生產 artifact；draft 不會輸出
+hugo --environment production --cleanDestinationDir --destination public `
+  --panicOnWarning --printPathWarnings
+
+pwsh -NoProfile -File scripts/verify-built-site.ps1 -Dist public
 ```
 
-尾斜線不是風格問題。`new URL("posts/x/", "https://justty32.github.io/self_blog")` 會把 `self_blog` 當成要被取代的最後一段，得到 `https://justty32.github.io/posts/x/`——base 靜默消失，而且產生的是語法合法、肉眼正常、只有部署後才 404 的 URL。因此：
+`verify-built-site.ps1` 必須是無第三方套件的 PowerShell gate，檢查：
 
-- `ensureTrailingSlash` 是唯一入口；禁止在 component 或 endpoint 內直接 `new URL(import.meta.env.BASE_URL, ...)`。
-- verify 對每一個 canonical、Open Graph URL、RSS channel/item link/guid 與 sitemap `<loc>` 斷言 `startsWith(canonicalRoot)`，並斷言字串中 `/self_blog/` 恰好出現一次（同時擋掉漏 base 與雙重 base）。
+- Hugo output 只有 HTML、CSS、圖片、RSS、sitemap、favicon 等必要檔案。
+- 不存在 `.js`、`.mjs`、`<script>`、inline event handler、`javascript:` URL、
+  iframe、embed 或自動載入的第三方資源。
+- 第三方普通 `<a href>` 可存在，但 stylesheet、image、font、media、preload、
+  CSS `url()` 等自動載入 URL 必須是本站或相對 URL。
+- 所有 `<img>` 有非空 `alt`、正整數 `width` 與 `height`；輸出圖片大小及尺寸
+  合乎 gate。
+- draft 的標題、basename、獨特文字、圖片、tag/category、RSS item 與 sitemap
+  URL 都不出現在 production output。
+- HTML 內的 internal URL、canonical、RSS、sitemap 都正確包含一次
+  `/self_blog/`；沒有意外的 `/posts/...` root URL 或雙重 base。每個 same-site URL
+  還必須解析到實際 artifact，含 fragment 時也要有對應 `id`。
+- `public/` 不含 Markdown、`media/`、`content/`、`docs/`、workflow、Hugo
+  binary、module cache 或 source map。
 
-- RSS 的 `site` 使用 canonical root，item link 使用不帶前導 `/` 的 `posts/${slug}/`。
-- feed channel、item link/guid、canonical、Open Graph 與 sitemap `<loc>` 必須以 `https://justty32.github.io/self_blog/` 開頭。
-- `<head>` 用 base-aware URL 連到 `rss.xml` 與 `sitemap-index.xml`。
-- `@astrojs/sitemap` 的預期輸出是 `sitemap-index.xml` 與至少 `sitemap-0.xml`。
+## 6. RSS、sitemap、404 與 archive
 
-此 repo 無法提供 origin 根 `https://justty32.github.io/robots.txt`；`/self_blog/robots.txt` 不是有效的 origin-wide robots 規則。因此 MVP 不宣稱提供 robots.txt，若需要須由根站 repo 管理。
+只為 home 產生 RSS：
 
-## 4. 單一 Pages workflow
+```toml
+[outputs]
+home = ['HTML', 'RSS']
+section = ['HTML']
+taxonomy = ['HTML']
+term = ['HTML']
 
-`.github/workflows/pages.yml` 觸發：
+[services.rss]
+limit = -1
+```
 
-- pull request：verify only。
-- push `main`：verify + upload + deploy。
-- `workflow_dispatch`：任意 ref 可 verify，只有 `refs/heads/main` 可 upload/deploy。
+`layouts/home.rss.xml` 只 range `Section == "posts"` 且 `Draft == false` 的
+公開文章，輸出 `public/index.xml`。About、Contact、tag、category 不得進首頁
+feed。production 必須產生 Hugo 內建 `public/sitemap.xml`，並產生
+`layouts/404.html` 對應的 `public/404.html`。
 
-所有 Action 在實作時核對當前版本後固定完整 commit SHA，旁註對應 release。
+`/archive/` template 對 production posts 使用 Hugo 原生 `GroupByDate "2006-01"`；
+不讀取或建立月份欄位。PowerShell gate 以兩個以上月份 fixture 驗證每月只出現
+一次、文章歸組正確、draft 不出現。
 
-### Build job
+## 7. GitHub Pages Actions
 
-權限只有讀取所需的 `contents: read`、`pages: read`；後者供 `configure-pages` 讀 Pages metadata，不授予部署寫入。官方 starter workflow 在 build job 給的是 `pages: write`，本專案刻意收斂，但這需要實測：M2 第一個 CI run 若 `configure-pages` 因權限失敗，先確認是不是 enablement 行為差異，再決定放寬成 `pages: write`，或改為不在 build job 呼叫該 action、由設定檔提供 base。無論如何都不在 deploy job 之外加 `id-token: write`。步驟：
+workflow 只使用 GitHub 官方 Actions，且實作時填入完整 40 位 commit SHA、release
+名稱與來源註解；禁止浮動 tag。允許的官方 action 僅限必要的 checkout、Pages
+metadata、artifact upload 與 deploy：
 
-1. checkout。
-2. 可部署 run 執行 `actions/configure-pages`，把 output 明確映射給 Astro build config。
-3. 安裝 Node 24，啟用 npm cache，執行 `npm ci`。
-4. 執行唯一品質入口 `npm run verify`。
-5. 確認 `dist/` 根直接含 `index.html`、`404.html`、`posts/<fixture>/index.html`。
-6. 只有 main 非 PR run 才以 `actions/upload-pages-artifact` 的 `path: dist/` 上傳。
+- `actions/checkout`
+- `actions/configure-pages`
+- `actions/upload-pages-artifact`
+- `actions/deploy-pages`
 
-不得上傳 repo 根、包著一層 `dist/` 的父目錄或 `dist/self_blog/`。
+Hugo binary 從官方 release 取得並驗證預先記錄的 v0.165.0 standard SHA-256；不
+使用第三方 Hugo installer。workflow 不執行 npm 或下載遠端 theme/module。
 
-Astro 的預設資產目錄是底線開頭的 `_astro/`。`actions/deploy-pages` 的部署路徑不執行 Jekyll，因此不需要 `.nojekyll`；但這是 Pages 最經典的 404 來源，所以 M2 的 smoke test 必須實際請求一個 `_astro/*.css` 並確認 HTTP 200，把這個假設變成證據而不是信念。
+觸發與權限：
 
-### Deploy job
+- pull request：checkout、Hugo version/checksum、validation build、production
+  build、artifact gate；不部署。
+- push `main`：同樣驗證後 upload artifact，再由獨立 deploy job 部署。
+- `workflow_dispatch`：非 main 只驗證；只有 main 可 upload/deploy。
+- build job 只有 `contents: read` 與 Pages metadata 所需權限；deploy job 才有
+  `pages: write`、`id-token: write`。
+- `github-pages` environment 與 production concurrency 固定在 workflow；不使用
+  PAT、不自動修改 repository Pages 設定。
 
-- `needs: build`，並再次檢查 main／非 PR 條件。
-- 權限只有 `pages: write`、`id-token: write`。
-- environment 是 `github-pages`，deployment branch policy 只允許 `main`。
-- environment URL 取 deploy step output。
-- production concurrency 放在 workflow level，group 是 `pages-production`，涵蓋整個 build → upload → deploy run，`cancel-in-progress: false`；不得只放在 deploy job。
-- PR 使用各自 group 並可取消舊 run，不進 production queue。
+upload 的 path 必須是 `public/` 的內容本身，不是包著 `public/` 的父目錄。部署後
+至少檢查首頁、文章深層頁、tag、archive、RSS、sitemap、CSS、圖片與不存在網址。
 
-upload 成功、deploy 成功、部署後 smoke test 是三份不同證據，不互相冒充。
+## 8. 單一安全發布指令
 
-## 5. Artifact hard gate
+MVP 的本機支援矩陣是 Windows amd64 與 Linux amd64，兩者都需 Git、PowerShell 7 與
+經 checksum 驗證的 Hugo v0.165.0 standard。PowerShell 腳本必須使用跨平台 path API，
+不得呼叫 Windows registry、`cmd.exe` 或假設大小寫不敏感；Ubuntu／Windows CI matrix
+執行相同 fixture。作者在兩個平台都只需執行：
 
-`npm run verify:dist` 必須證明：
+```powershell
+pwsh -NoProfile -File scripts/publish.ps1
+```
 
-- `dist/index.html`、`dist/404.html`、fixture article 存在。
-- 不存在 `404/index.html` 取代 `404.html` 的情況。
-- 沒有任何 `.js`／`.mjs` artifact，browser script request 是 0。
-- 解析全部生成 HTML，拒絕任何 `<script>`（包含 inline、module、import map）、`on*=` event attribute 與 `javascript:` URL；MVP 不用 JSON-LD script，「沒有外部 request」不能代替這項檢查。
-- 解析全部生成 SVG，拒絕 script、event handler、`javascript:` URL 與外部資源引用。
-- 沒有 server entry／manifest／adapter runtime、`node_modules`、`.map`、Markdown source、`wf/`、`docs/`、agent 檔、draft 或 build tool。
-- `dist/images/` 與公開文章的圖片引用完全相等：每個 `/images/...` 連結都有實際檔案，且 `dist/images/` 沒有任何未被引用的檔案。兩個方向都要檢查。
-- `media/` 本身不出現在 `dist/`；draft 引用的圖片不在 `dist/images/`。
-- internal `href`、`src`、`srcset`、CSS URL、canonical、OG、RSS、sitemap 無漏 base／雙重 base。
-- 公開 article/tag/month 的 `getStaticPaths()` 集合與 `getPublishedPosts()` 所產生的 route inventory 完全相等。
-- 輕量 byte/request budget 通過，詳見 [architecture.md](architecture.md#7-訪客下載-hard-budget)。
+此指令必須：
 
-preview smoke test 要把 `dist/` 實際掛在 `/self_blog/`，走訪完整公開 HTML route inventory，另驗證 RSS/head links、CSS、圖片／SVG；每頁 browser network 的 script request 都是 0。一個不存在的深層 URL 必須回 HTTP 404、顯示自訂頁，且返回首頁連結仍帶正確 base。
+1. 確認 repo root、預期 remote、非 detached HEAD，以及 Hugo 正是 v0.165.0。
+2. 若只有一個變更的 article/page content unit，自動選取；若有多個，要求作者以
+   `-Content <path>` 明確指定，不猜測。文章以 leaf directory 名稱擁有對應的
+   `media/<post>/`；本次 media 集合是該目錄下所有變更（包含刪除），且留下的檔案都須被引用。
+3. 拒絕已 staged 或 unstaged 的任何選取集合外變更，也拒絕被 Git tracked 的 `public/`。
+4. 在受控的暫存 validation destination 執行含 draft 的 validation build。
+5. 在明確的 repo `public/` 目錄執行 production build 與完整 artifact gate。
+6. 只對選定 content unit 與上述 owned media 變更執行 `git add -- <exact paths>`，
+   並再次確認 staged path 與 allowlist 完全相等。
+7. 沒有可提交內容、工作樹在驗證期間發生異動、remote/upstream 不符或任一步驟
+   失敗時停止，不 commit、不 push。
+8. 驗證全綠後建立內容 commit，使用普通 `git push`；禁止 force push、
+   `--no-verify` 或 `git add -A`。
 
-## 6. 站外人工步驟
+網站程式、layout、workflow 或 policy 的修改必須先以獨立 commit 合併；發布指令
+只負責已審核程式上的指定 content unit 與其 media 變更。push 後由 Actions 重新 build
+並部署，不由作者提交 `public/`。
 
-repository 管理者需：
+## 9. 手動 Pages 設定
 
-1. Settings → Pages → Source 選 GitHub Actions。
-2. `github-pages` environment 只允許 `main` 部署。
+管理者一次性完成：
 
-不使用高權限 PAT 讓 workflow 自動啟用 Pages。M2 將這兩項寫進 `wf/WAIT_USER.md`，完成即移除。
+1. Repository Settings → Pages → Source 選 GitHub Actions。
+2. `github-pages` environment 的 deployment policy 只允許 `main`。
+
+不以高權限 PAT 讓 workflow 自動啟用 Pages。這兩項若尚未完成，記錄在交接文件，
+不阻止 Hugo site plan 被接受或本機 site work；但不能宣稱已上線。既有 workflows
+snapshot 的授權／導入另列為 Deferred workstream，不作為 Hugo site implementation
+的前置條件。
 
 ## 參考
 
-- [Astro configuration reference](https://docs.astro.build/en/reference/configuration-reference/)
-- [Astro dynamic routes and `getStaticPaths()`](https://docs.astro.build/en/guides/routing/#dynamic-routes)
-- [Astro GitHub Pages guide](https://docs.astro.build/en/guides/deploy/github/)
-- [Astro RSS](https://docs.astro.build/en/recipes/rss/)
-- [Astro sitemap](https://docs.astro.build/en/guides/integrations-guide/sitemap/)
-- [GitHub custom Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
-- [GitHub Pages REST API permissions](https://docs.github.com/en/rest/pages/pages)
-- [GitHub custom 404](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-custom-404-page-for-your-github-pages-site)
-- [RFC 9309 robots.txt location](https://www.rfc-editor.org/rfc/rfc9309.html)
+- [Hugo URL management](https://gohugo.io/content-management/urls/)
+- [Hugo page resources](https://gohugo.io/content-management/page-resources/)
+- [Hugo build options](https://gohugo.io/content-management/build-options/)
+- [Hugo image render hooks](https://gohugo.io/render-hooks/images/)
+- [Hugo RSS templates](https://gohugo.io/templates/rss/)
+- [Hugo sitemap templates](https://gohugo.io/templates/sitemap/)
+- [Hugo custom 404](https://gohugo.io/templates/404/)
+- [Hugo build command](https://gohugo.io/commands/hugo_build/)
+- [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-actions)

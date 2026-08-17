@@ -58,7 +58,9 @@ M1 不引入 inbox、tick、routines、schedule、`.claude/commands/wf-tick.md`�
 - 修正 `INDEX`、活狀態及各 workflow 內的「repo 根」描述，使其符合實際 `wf/` 位置。
 - 移除全部 `{{...}}`、`〔模板說明〕`、`〔佔位〕`。
 - 裁掉 kernel 內 inbox／scheduler 區段，以及 `write.md` 對 digest／plan-a-thing 的純文字導流。
-- M1 的 `AGENTS.md` 只能指向當時已存在的 snapshot verifier；M2 建立 npm scripts 的同一個 commit，才改為 `npm run verify`。
+- M1 的 `AGENTS.md` 只能指向當時已存在的 snapshot verifier；網站建立
+  `scripts/verify.ps1` 的同一個 commit，才把正式品質入口改為
+  `pwsh -NoProfile -File scripts/verify.ps1`。
 
 不建立 `wf/AGENTS.md` shim。它只能遮住部分斷鏈，無法修正文意，還會多出一個容易被誤認為權威入口的檔案。
 
@@ -93,7 +95,7 @@ wf/
     write.md
     common/{README.md,gotchas.md,conventions.md,writing.md}
 scripts/
-  verify-workflow-snapshot.mjs
+  verify-workflow-snapshot.ps1
 ```
 
 ## 5. 可重現的導入與更新程序
