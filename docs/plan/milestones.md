@@ -48,7 +48,7 @@ Done when：
 
 ## M3 — 一般 blog 的完整內容管線
 
-工作：frontmatter schema、draft、標籤、發布月份 archive、語法高亮、heading anchor、圖片、Mermaid、RSS、sitemap、內容與連結檢查。
+工作：文章與一般頁面 frontmatter schema、draft、標籤、發布月份 archive、語法高亮、heading anchor、圖片、Mermaid、RSS、sitemap、內容與連結檢查。
 
 Done when：
 
@@ -57,6 +57,7 @@ Done when：
 - 全部 tag/month route 都是 build-time 靜態 HTML，可直達、分享、以純連結操作，不需要 client-side 搜尋或篩選 JavaScript。
 - article、tag、month 三組 `getStaticPaths()` 回傳值與獨立 route inventory 逐項相等；參數都是 decoded string，month 固定 `{ year: "YYYY", month: "MM" }`。
 - `npm run test:content` 的正／負 fixture 證明：缺必填欄位、無標籤、重複 post/tag slug、未加引號或不存在的日期（例如 `2026-02-30`）、圖片缺 alt 或空 alt、圖片檔不存在、圖片超過 200 KiB 或 1600px、remote hotlink、壞 internal link、重複 base、公開文章 Mermaid 缺 `accTitle`/`accDescr` 或語法錯誤都會使 build 失敗。
+- 只新增 `src/content/pages/<slug>.md` 就能產生 `/<slug>/`，可選自動加入導航；page slug 和保留 route／其他內容碰撞、缺 metadata 或 production draft 洩漏都會使驗證失敗。
 - tag fixture 以 `技術筆記` 證明 Unicode letter 正向案例及 NFC 映射穩定；負向案例涵蓋空 slug、保留字、Unicode normalization collision、`#`、`?`、反斜線、`:`、`%`、`/`、`.` 與控制字元。不安全 segment 不可默默 percent-encode 後通過。
 - production `dist/` 搜尋不到 draft canary 的 slug、標題、獨特內文或 asset（含 `media/` 內只被該 draft 引用的圖片）；draft 不被 render，也不進 route、列表、tag、archive、RSS、sitemap。本機明確預覽 draft 時才 render。
 - Mermaid 是有 title/description 的靜態 SVG；頁面沒有 Mermaid runtime、inline initializer、client script 或外部 CDN request。
@@ -81,7 +82,7 @@ Done when：
 
 ## M5 — 上線硬化與交接
 
-工作：404、SEO/OG、canonical、README 寫作／預覽／部署說明、授權稽核、效能與無障礙檢查。
+工作：404、SEO/OG、canonical、README、作者指南、預覽／部署說明、授權稽核、效能與無障礙檢查。
 
 Done when：
 
@@ -92,6 +93,7 @@ Done when：
 - 全站沒有任何 `og:image`、`twitter:image` 或 cover 相關 markup 殘留；`public/` 只有 favicon。
 - license inventory 與 `THIRD_PARTY_NOTICES.md` 雙向一致；README 區分自有內容 MIT 與第三方授權，artifact 只含閱覽成品必要的 notice，不含 build-only package 本體。
 - README 可讓沒有相鄰 workflows repo 的新環境重現開發、建置與部署。
+- `docs/AUTHORING.md` 經 fresh-clone walkthrough 驗證，逐步涵蓋新增／預覽／發布文章、frontmatter 的 title／description／publishedAt／updatedAt／draft／tags、本機圖片、Mermaid、一般 About／Contact 類 Markdown 頁面、導航、標籤頁與月份頁檢查，以及常見 build error；根 README 有明顯入口。
 - `npm run verify:performance` 走訪完整公開 HTML route inventory並通過 [architecture.md](architecture.md) 的每項 hard budget，含三個量測 fixture（首頁、純文字文章、重量級文章）與重量級文章的 total transfer 上限。固定 mobile profile 的 Lighthouse 目標為 performance ≥95、accessibility ≥95、CLS ≤0.1，且無 serious/critical accessibility finding。
 - 實際正式首頁、一個文章深層網址、一個 tag 頁、一個月份頁與不存在網址驗證成功；deployment run、報告與 commit SHA 可互相對應。
 

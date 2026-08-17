@@ -77,6 +77,20 @@ schema 與內容規則：
 - `draft: true` 在 production 的 render、route、列表、RSS、sitemap 與 asset 中完全排除，本機可按需預覽。
 - 正式內容拒絕 raw HTML、`<script>`、event-handler attribute 與 remote hotlink。圖片一律引用本 repo 的 `/images/...`（[§4](#4-圖片)）。
 
+### 一般 Markdown 頁面
+
+「關於」、「聯絡方式」及日後新增的固定資訊頁不要求作者撰寫 Astro 元件；
+來源放在 `src/content/pages/<slug>.md`，由單一 static route template 產生
+`/<slug>/`。最小 frontmatter 是 `title`、`slug`、`description`、`draft`，可選
+`showInNav` 與 `navOrder`。這類頁面沒有文章日期或 tags；`draft: true` 同樣完全
+排除 production route、sitemap 與 asset。
+
+page slug 使用和文章相同的 ASCII kebab-case 規則，且不得和 `posts`、`tags`、
+`archive`、`rss.xml` 等站內保留 route 或其他頁面碰撞。導航由已發布且
+`showInNav: true` 的頁面按 `navOrder`、再按 slug 排序自動產生；新增頁面不需改
+component registry。純靜態站不內建 contact form，聯絡頁可放 `mailto:` 或其他
+明確文字連結，若日後要接表單服務須另立隱私／第三方 request ADR。
+
 ## 3. 一般 blog 導航
 
 所有導航均於 build-time 產生，不用前端篩選器：
@@ -302,7 +316,7 @@ src/
 
 ## 9. MVP 與非目標
 
-MVP：首頁、文章列表／靜態分頁、archive index、per-month page、文章頁、tag index、per-tag page、404、GFM、heading anchors、build-time code highlighting、技術截圖、Mermaid SVG、RSS、sitemap、canonical 與基本 Open Graph（不含 `og:image`）。
+MVP：首頁、文章列表／靜態分頁、archive index、per-month page、文章頁、tag index、per-tag page、一般 Markdown 頁面、404、GFM、heading anchors、build-time code highlighting、技術截圖、Mermaid SVG、RSS、sitemap、canonical 與基本 Open Graph（不含 `og:image`）。
 
 暫不包含：CMS、留言、全文搜尋、analytics、多作者、國際化、文章級主題、讀者帳號、SSR、runtime theme switch。它們有實際需求時另寫 ADR。
 

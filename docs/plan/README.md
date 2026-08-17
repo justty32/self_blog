@@ -19,6 +19,7 @@
 | 個人靜態 blog | Astro static output | `dist/` 不需 server runtime |
 | GitHub Pages | project-site base `/self_blog/` + Pages Actions | main deployment 與深層網址 smoke test |
 | Markdown 文章 | Content Collection 只收 `.md` | 新文章自動進列表、route、tag、RSS |
+| 一般頁面與作者指南 | `pages` Markdown collection + `docs/AUTHORING.md` | 不改元件即可新增 About／Contact 類頁面；fresh-clone walkthrough 可重現 |
 | 依標籤／發布月份尋找 | `/tags/`、`/tags/<tag>/`、`/archive/`、`/archive/YYYY/MM/` | 每個索引皆為可直達、可分享的靜態 HTML |
 | 圖片與流程圖 | 僅技術截圖，來源在 `media/<slug>/`、文章只寫 `/images/...`；Mermaid build-time static SVG | 單檔大小/尺寸 gate、只部署被引用的圖、第三方 request 為 0；閱覽端不載 Mermaid/runtime JS |
 | 非常輕量 | 0 JS、system fonts、無 analytics/CDN/client router | byte/request budget 與 network log |
