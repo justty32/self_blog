@@ -8,15 +8,17 @@
 
 ## 1. 正式方案與需求
 
-- [ ] [ADR-0002](adr/0002-hugo-no-npm.md) 已被接受，並取代 [ADR-0001](adr/0001-mermaid-profile-b-evidence.md) 對正式實作的 authority；後者只保留歷史 spike 記錄。
+- [ ] [ADR-0002](adr/0002-hugo-no-npm.md) 已被接受，並取代 [ADR-0001](adr/0001-mermaid-profile-b-evidence.md) 對正式實作的 authority；後者只保留歷史 spike 記錄。[ADR-0003](adr/0003-month-archive.md) 已固定月份 archive 的 route 與成長 budget。
 - [ ] 正式 build 使用 Hugo `v0.165.0` **Standard**，不是 extended／withdeploy／浮動 tag；使用官方 release `checksums.txt` 驗證 exact binary。
 - [ ] 已記錄 Linux amd64 SHA-256：`5c3a37a5450b3e386e5b75a87a790fea2d04a796d75e171216c80ef48a32b432`；Windows amd64 SHA-256：`bdd9cc7837a42389067b2d0df7858d5878ceddef21307c2dd27fa10885fbbcf9`。
+- [ ] 已區分官方 checksum manifest 證據與 runtime 證據；Ubuntu gate 會對實際下載檔驗 SHA-256，並要求 `hugo version` 回報 v0.165.0、linux/amd64、standard。
 - [ ] Markdown 只在 build-time 轉成 ordinary HTML；Pages artifact 不含 Markdown source、Hugo binary 或 build dependency。
 - [ ] 正式網站不引入 npm、Node、package lock、Go module、Hugo theme、遠端 module、git submodule、remote resource 或 client JavaScript；規格要求歷史 Mermaid spike 在第一個 Hugo 功能前由獨立 cleanup commit 移出工作樹，且不得接入 Hugo build／CI／publish command。
 - [ ] GitHub Pages project-site URL 與 base 均為 `https://justty32.github.io/self_blog/`；canonical、RSS、sitemap、資產與 404 均正確帶 base。
 - [ ] 文章採 Hugo 原生 content model；front matter 使用原生 `title`、`date`、`lastmod`、`draft`、`tags`，可選原生 `categories`，不新增 `publishedAt`、自訂 taxonomy 或 tag slug。
 - [ ] draft 的 HTML、route、列表、tag、archive、RSS、sitemap 與圖片完全不進 production artifact。
 - [ ] Hugo 原生 tags（及需要時的 categories）具備 taxonomy index／term 靜態頁；`/archive/` 是單一索引頁，以每個 `YYYY-MM` anchor 分組，不另承諾月份 route；term 名稱與 URL normalization 不由自訂 slug validator 取代。
+- [ ] 流程圖因 MVP 沒有實際需求而排除；規格未錯稱 D2／Graphviz 等 native binary 不可行，未來有需求時須另立 enhancement ADR。
 - [ ] `content/<page>.md` 可產生 About／Contact 等一般 Markdown 頁，不需新增 section 或 template registry；作者指南為 `docs/AUTHORING.md`。
 - [ ] 圖片僅限 `media/` 的本地技術截圖；無 cover、裝飾圖、角色圖或 `og:image`；只複製公開文章實際引用的檔案。
 - [ ] CSS theme 以 semantic tokens 與自有 CSS 實作藍／青綠輕科幻風格；換色不改內容與模板結構，且有 responsive、鍵盤焦點、對比與 reduced-motion evidence。
@@ -28,9 +30,10 @@
 - [ ] Hugo binary 只在本機／CI build-time 使用，不進 repo 或 Pages artifact；其 Apache-2.0 與本 repo 自有 MIT 內容的界線已記錄。
 - [ ] 所有 GitHub Actions 固定完整 commit SHA，且每個 action、nested dependency 與使用中的第三方素材有 license inventory；unknown／missing license fail closed。
 - [ ] CSS、HTML、圖片、單頁總傳輸量與 request budgets 已定義並由同一品質入口驗證；不得以放寬 gate 取代修正輸出。
-- [ ] `public/` 明確列入 `.gitignore`；驗證證明 build output 不會被 stage、commit 或 push。
-- [ ] Windows amd64 與 Linux amd64 以 PowerShell 7 執行同一品質／發布入口；CI matrix
-  驗證大小寫、路徑分隔、換行與 executable bit，沒有只在 Windows 可用的命令。
+- [ ] 實際 `/archive/` 的 HTML + CSS + favicon raw artifact bytes ≤ 120 KiB、≤ 6 requests、0 JavaScript、0 image request；`1 KiB = 1024 bytes`，auto-load closure 含 HTML preload 與 CSS `@import`／`url()`，超標會 fail closed，未經 ADR 不得放寬。
+- [ ] `public/`、`resources/` 與 `.hugo-validation/` 三個 Hugo 產出目錄都明確列入 `.gitignore`，且在第一次執行 `hugo` 之前就存在；驗證證明 build output 不會污染 status、被 stage、commit 或 push。
+- [ ] Windows amd64 與 Linux amd64 共用同一套 PowerShell 品質／發布 scripts；Ubuntu CI 跑完整 validation／artifact／budget／Pages path，Windows CI 在 fresh disposable Git fixture 以 `publish.ps1 -TestMode` 實跑 checksum/version、path normalization、content selection、candidate tree、staging allowlist、image path 與最小 smoke，並斷言無 commit／push／網路寫入；不重跑效能、部署或完整站點 smoke。
+- [ ] exact v0.165.0 template fixture 為每個使用中的 page kind、render hook 與 RSS template 放置並驗證不同 sentinel；不能只以 build success 判定 lookup 正確。
 
 ## 3. workflows 的獨立外部 gate
 
@@ -53,7 +56,7 @@ workflows 的複製、導入與完成宣告；**不阻擋本規劃被接受，�
 - [ ] 若規則真的要放寬，已用獨立 ADR 記錄理由、範圍、風險、替代方案與 reviewer；沒有直接改 allowlist 使紅燈消失。
 - [ ] 計畫文件與 ADR 已先獨立提交並記錄 `plan_commit_sha`；只有取得 SHA 後才可進入實作 commit。
 - [ ] 實作順序為：先建立 gate → 驗證 gate 會擋錯誤 → 再建立 Hugo 垂直切片 → 分階段加入內容與外觀；每一階段都有獨立 evidence。
-- [ ] 一鍵發布流程已可重現：Markdown + `media/` → `pwsh ./scripts/publish.ps1` → verify → 只 stage 明確選定 content unit 與其 owned media 變更（含刪除）的 scoped commit／push → GitHub Actions 用固定 Hugo build／deploy；`public/` 全程不進 git。
+- [ ] 一鍵發布流程已可重現：Markdown + `media/` → `pwsh ./scripts/publish.ps1` → clean index → temporary index 產生 `HEAD` + selected content unit + owned media 的 candidate tree → 隔離 snapshot 驗證 → real index／commit tree ID 都與 candidate 相等 → scoped push → GitHub Actions 固定 Hugo build／deploy。集合外 unstaged／untracked 明列排除但不阻擋；`public/` 全程不進 git。
 
 ## 5. Reviewer decision
 

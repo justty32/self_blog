@@ -21,7 +21,11 @@
 | Linux amd64 | `hugo_0.165.0_linux-amd64.tar.gz` | `5c3a37a5450b3e386e5b75a87a790fea2d04a796d75e171216c80ef48a32b432` |
 | Windows amd64 | `hugo_0.165.0_windows-amd64.zip` | `bdd9cc7837a42389067b2d0df7858d5878ceddef21307c2dd27fa10885fbbcf9` |
 
-下載後必須以同一 release 的 `checksums.txt` 驗證，再檢查 `hugo version`。`extended`、`withdeploy`、浮動 tag 與 package-manager 安裝均不符合此 gate。官方來源：[Hugo v0.165.0 release](https://github.com/gohugoio/hugo/releases/tag/v0.165.0)、[Hugo license](https://gohugo.io/about/license/)。
+上表兩個值已與同一 v0.165.0 release 的官方 `checksums.txt` exact entry 核對；這是 manifest
+證據，不冒充跨平台 runtime 證據。每次下載後仍必須先驗實際檔案 SHA-256，再檢查
+`hugo version`。Ubuntu gate 必須明確得到 `v0.165.0`、`linux/amd64`、standard；Windows
+作者流程則得到相同版本、`windows/amd64`、standard。`extended`、`withdeploy`、浮動 tag 與
+package-manager 安裝均不符合此 gate。官方來源：[Hugo v0.165.0 release](https://github.com/gohugoio/hugo/releases/tag/v0.165.0)、[Hugo license](https://gohugo.io/about/license/)。
 
 ## 依賴與授權 gate
 

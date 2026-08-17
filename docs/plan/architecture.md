@@ -108,6 +108,10 @@ page route 不得與 `posts`、`tags`、`categories`、`archive`、`index.xml`�
 - 文章頁顯示發布日期、可選更新日期與 tags；發布日期連到 `/archive/#YYYY-MM`。
 - 文章頁提供上一篇／下一篇；RSS 只收公開文章。
 
+月份路由的決策與成長邊界由 [ADR-0003](adr/0003-month-archive.md) 固定：`/archive/`
+超過既定 transfer／request budget 時 build 必須失敗；不得直接放寬數字，而要另立 ADR
+在 static pagination 與月份獨立頁之間重新選擇。
+
 所有首頁、文章列表、taxonomy、archive、RSS、sitemap、上一篇／下一篇與頁面導航都透過
 同一個 Hugo partial 取得「published posts」投影：僅 section `posts`、由 Hugo 的 production
 draft filter 排除草稿、按 `.Date`／`.RelPermalink` 排序。不得在各 template 自己重複 filter
@@ -115,7 +119,7 @@ draft filter 排除草稿、按 `.Date`／`.RelPermalink` 排序。不得在各 
 
 所有 template link、stylesheet、RSS、sitemap、canonical 與 Open Graph URL 都使用 Hugo
 `.RelPermalink`／`.Permalink` 或單一 URL partial。Markdown 的
-`layouts/_default/_markup/render-link.html` 只把 `/posts/...`、`/tags/...`、`/archive/...` 和
+`layouts/_markup/render-link.html` 只把 `/posts/...`、`/tags/...`、`/archive/...` 和
 已存在 standalone page route 的站內 logical root URL 轉為 base-aware relative URL；`#anchor`、
 `mailto:` 與完整協定 URL 不改。作者不得自行寫 `/self_blog/...`。`verify-built-site.ps1` 對所有
 輸出 URL 斷言 base `/self_blog/` 恰好出現一次，並解析每個 same-site link／fragment，確認
@@ -151,6 +155,9 @@ media/<post-directory>/<file>.(png|jpg|jpeg|webp)
 
 `hugo.toml` 以 Hugo 內建 mount 設定把 `media/` 掛到 `assets/images/`。這只是本 repo 的
 virtual filesystem mapping：不宣告 `go.mod`、不 import remote module、也不使用 theme。
+一旦宣告 `module.mounts` 就會取代 Hugo 的預設 mounts，因此 config 必須明列目前使用的
+`assets`、`content`、`layouts`、`static` 與 `media`。MVP 刻意不用 `data`、`i18n`、
+`archetypes`；未來啟用任一項時，必須同時補 mount 與 template lookup fixture，避免靜默失效。
 圖片因此是 Hugo global resource，而不是 `static/` 的無條件複製品；公開文章的 image
 render hook 以 `resources.Get` 找到它、失敗即 `errorf`，並用 `.RelPermalink`、`.Width`、
 `.Height` 輸出 `<img>`。只有被公開內容實際引用的圖片會進 `public/images/`。
@@ -160,7 +167,7 @@ render hook 以 `resources.Get` 找到它、失敗即 `errorf`，並用 `.RelPer
 
 ### Image render hook 與入口 gate
 
-`layouts/_default/_markup/render-image.html` 是唯一圖片輸出點，必須：
+`layouts/_markup/render-image.html` 是唯一圖片輸出點，必須：
 
 - 只接受 `images/<post-directory>/<file>.(png|jpg|jpeg|webp)` 的本 repo logical resource path；`https:`、
   `http:`、data URL、root-relative、`..`、query、fragment 和直接寫 `/self_blog/` 都失敗。
@@ -207,9 +214,11 @@ build-time theme 選擇 token pack，不放入文章 frontmatter，不做讀者�
 light/dark 值，純 CSS `@media (prefers-color-scheme: dark)` 切換；`<meta name="color-scheme"
 content="light dark">` 同步瀏覽器 UI。dark media block 外，component CSS 不得覆寫顏色。
 
-本站以繁體中文為主：Hugo `locale = "zh-Hant-TW"`；輸出 `<html lang="zh-Hant-TW">`、
-RSS `<language>zh-Hant-TW</language>`、
-Open Graph `og:locale=zh_TW`。正文目標每行 35–45 個全形字，以 `em`／`rem` 設
+本站以繁體中文為主：`hugo.toml` 設 `locale = "zh-Hant-TW"`（Hugo v0.158.0 起 `languageCode`
+已 deprecated，改用 `locale`；單語站不需要另建 `[languages]` 或 `defaultContentLanguage`）；
+輸出 `<html lang="zh-Hant-TW">`、RSS `<language>zh-Hant-TW</language>`、
+Open Graph `og:locale=zh_TW`。設定寫對不等於輸出正確，gate 必須斷言**實際生成的字串**，
+而不是斷言設定檔寫了什麼。正文目標每行 35–45 個全形字，以 `em`／`rem` 設
 `--measure-prose`，不用 Latin `ch` 假設；字型堆疊明列 `-apple-system`、`"PingFang TC"`、
 `"Microsoft JhengHei"`、`"Noto Sans TC"`、`sans-serif`，但不下載 font。中文段落
 `line-height` ≥1.75；code 與長 URL 可 `overflow-wrap: anywhere`，正文不使用
@@ -219,22 +228,36 @@ Open Graph `og:locale=zh_TW`。正文目標每行 35–45 個全形字，以 `em
 ## 6. 訪客下載 hard budget
 
 production output 使用三個固定 fixture：典型首頁、一篇約 2,000 字的純文字文章，以及一篇
-約 2,000 字、含 code 與一張技術截圖的重量級文章。首頁和純文字文章沒有圖片 request。
+約 2,000 字、含 code 與一張技術截圖的重量級文章；另外每次 build 都量測實際 production
+`/archive/`，使它隨文章增加時仍受 gate 保護。首頁、純文字文章與 archive 沒有圖片 request。
 
 | 項目 | 量測 fixture | MVP hard budget |
 |---|---|---|
 | client JavaScript | 全部頁面 | 0 bytes、0 request |
-| 全站共用 CSS | 全部頁面 | gzip 後 ≤ 24 KiB |
+| 全站共用 CSS | 全部頁面 | raw artifact bytes ≤ 24 KiB |
 | 390px 首頁首屏 | 首頁 | HTML + CSS + favicon ≤ 120 KiB、≤ 8 requests、0 圖片 request |
 | 純文字文章首載 | 純文字文章 | HTML + CSS + favicon ≤ 100 KiB |
 | 文章頁 total transfer | 重量級文章 | 全部資源合計 ≤ 300 KiB、≤ 10 requests |
+| archive 首次載入 | 實際 production `/archive/` | HTML + CSS + favicon ≤ 120 KiB、≤ 6 requests、0 JavaScript、0 圖片 request |
 | 單張圖片檔 | 任何頁面 | ≤ 200 KiB、最長邊 ≤ 1600px |
 | 第三方 origin request | 全部頁面 | 0 request |
+
+為了讓 Windows／Linux 與不同 host runtime 得到相同結果，budget 不模擬 HTTP header、
+gzip 或 Brotli：`1 KiB = 1024 bytes`，`total transfer` 是 HTML 本身加上其 auto-load closure
+中每個 canonical local artifact 的 raw byte length，重複 URL 只計一次。closure 從 HTML 的
+stylesheet、icon、preload、image、media 等載入點開始，並遞迴解析 CSS `@import`／`url()`；
+fragment 不增加 request。頁面 HTML 自己也算一個 request。第三方 auto-load、無法解析的 URL、
+JavaScript 及 source map 直接失敗，而不是漏算。
 
 `total transfer` 防止單項上限被組合繞過；任一列失敗即整體失敗，不可互相抵銷。artifact 若
 出現 `.js`、`.mjs`、source map、Markdown source、Hugo binary、module cache、workflow/docs、
 agent 文件、draft 或未使用 asset，驗證直接失敗。未來任何 client JS 都必須另立 Accepted ADR，
 說明必要性、逐頁範圍與 byte budget。
+
+archive 使用上述同一 raw-byte／request closure 口徑。gate fixture 必須證明 120 KiB 恰好通過、
+120 KiB + 1 byte 失敗，且 HTML preload、CSS `url()`、image 或 JavaScript 都會正確增加 request
+或觸發禁止規則。archive 若超過 hard budget，gate 必須 fail closed；只能依
+[ADR-0003](adr/0003-month-archive.md) 的演進規則另立決策，不能把 budget 數字直接調大。
 
 ## 7. 預定程式結構與品質入口
 
@@ -247,12 +270,18 @@ content/
   <page>.md
   posts/<year>/<slug>/index.md
 layouts/
-  _default/{baseof,list,single}.html
-  _default/_markup/{render-image,render-link}.html
-  archive/list.html
-  partials/{head,header,footer,published-posts,post-card}.html
-  posts/{list,single}.html
-  tags/{taxonomy,term}.html
+  baseof.html
+  home.html
+  page.html
+  section.html
+  taxonomy.html
+  term.html
+  404.html
+  home.rss.xml
+  archive/section.html
+  posts/{section,page}.html
+  _markup/{render-image,render-link}.html
+  _partials/{head,header,footer,published-posts,post-card}.html
 media/
   <slug>/*.{png,jpg,jpeg,webp} # mount 到 assets/images/，不是靜態輸出來源
 scripts/
@@ -267,28 +296,54 @@ static/
 hugo.toml
 ```
 
+上面的 layout 樹採 **Hugo 0.146 起的新 template 系統**：沒有 `_default/`，render hook 在
+`layouts/_markup/`，partial 在 `layouts/_partials/`，page kind 直接以 `home`／`page`／
+`section`／`taxonomy`／`term` 命名。舊制的 `layouts/_default/{baseof,list,single}.html` 與
+`layouts/partials/` 屬於 v0.146 之前的慣例，**不得與新制混用**——兩套寫法都可能在某些版本
+被接受，混著寫的結果是有些模板生效、有些被靜默忽略。
+
+因為套錯位置不會報錯、只會悄悄退回預設模板，第一個 Hugo gate 必須以 exact v0.165.0
+最小 fixture，替每個本站會使用的 page kind、兩個 render hook 與 RSS template 放置不同
+sentinel，再斷言 artifact 確實包含對應 sentinel；只證明 build 成功或只測 `page.html` 不足以
+確認 lookup contract。
+
 Hugo output 固定為 `public/`，而不是 `dist/`。`hugo.toml` 明列 `baseURL =
 "https://justty32.github.io/self_blog/"`、`locale = "zh-Hant-TW"`、`timeZone =
 "Asia/Taipei"`、`disableKinds`（只停用未採用 kind）、Hugo 預設 tags/categories taxonomy、
 `posts` permalink、Mounts 與 production `buildDrafts = false`。
 不使用 config cascade 偷改內容 contract。
 
-唯一品質入口是 `pwsh -File scripts/verify.ps1`：依序執行 content gate、`hugo --minify`、
-artifact/base/0-JS gate、base-mounted smoke test 和已啟用的 performance gate。PR 與 main
-使用同一入口；沒有接進這個入口的檢查不算存在。腳本使用 PowerShell 7 與 Hugo 內建能力，
-不安裝 npm package 或其他 build dependency。作者在 Windows amd64 與 Linux amd64 都執行
-相同的 `pwsh` 命令；腳本只用跨平台 path API，Git path 一律正規化為 `/`，不得假設磁碟機
-代號、反斜線或大小寫不敏感。CI 以 Windows／Ubuntu matrix 跑同一批 verification；實際 Pages
-artifact 只由通過 matrix 的 Ubuntu deploy path 產生。作者指南提供兩個作業系統的安裝、
-預覽與發布步驟。
+唯一品質入口是 `pwsh -File scripts/verify.ps1`：完整 profile 依序執行 content gate、
+`hugo --minify`、artifact/base/0-JS gate、base-mounted smoke test 和已啟用的 performance gate；
+author-flow profile 重用相同 scripts，只執行跨平台作者流程子集。沒有接進這個入口的檢查不算
+存在。腳本使用 PowerShell 7 與 Hugo 內建能力，不安裝 npm package 或其他 build dependency。
+作者在 Windows amd64 與 Linux amd64 都使用相同的 `publish.ps1` contract；腳本只用跨平台
+path API，Git path 一律正規化為 `/`，不得假設磁碟機代號、反斜線或大小寫不敏感。
+
+CI 分工為：Ubuntu amd64 跑完整 checksum、content、production、template sentinel、artifact／
+base／link／0-JS／image／archive budget gate 與 Pages path；Windows amd64 只跑 checksum/version、
+PowerShell 解析、path normalization、content-unit selection、staging allowlist、圖片路徑及最小
+Hugo smoke，不重跑效能、部署或完整站點 smoke。Windows author-flow job 必須在新建的
+disposable Git fixture 中以 `publish.ps1 -TestMode` 執行到 candidate tree／staging assertion，
+並證明 HEAD 未變、沒有 commit、push 或網路寫入；只 parse script 不算通過。正式 artifact 只由
+通過必要 jobs 的 Ubuntu deploy path 產生。作者指南提供兩個作業系統的安裝、預覽與發布步驟。
 
 正式作者流程唯一的發布命令是 `pwsh -NoProfile -File scripts/publish.ps1`；`-Content`
 與 `-Message` 可選。只有一個變更的 article/page content unit 時自動選取；多個時拒絕猜測並
 要求 `-Content <path>`。文章 content unit 擁有同名 `media/<post-directory>/`；腳本納入該
 目錄下所有變更（包含刪除），並要求所有留下的檔案都被該文章引用。一般頁面的 media 集合
-為空。腳本拒絕選取集合以外的任何 dirty／staged path，再執行 production `verify.ps1`。通過後只對這份
-精確 allowlist 執行 `git add -- <paths>`，並在 stage 前後逐項比對；同時拒絕 `public/` 被
-tracked／staged、拒絕 `git diff --check` 錯誤。最後顯示 diff，建立普通 commit，僅 fast-forward push 到
+為空。開始時 index 必須完全乾淨，避免 partial staging 或選定集合內外的既有 staged state
+產生歧義。選定集合以外的 unstaged／untracked path 不阻止發布，但必須明列為「本次排除且
+不會提交」。腳本以 temporary Git index 從 `HEAD` 加入本次 content unit 與 owned media，產生
+唯一 candidate tree ID；validation 與 production verify 只對由該 tree materialize 的隔離
+selected snapshot 執行，不得讀取原工作樹其他未提交變更。
+
+驗證通過後，腳本回到原工作樹，只對精確 allowlist 執行 `git add -- <paths>`，再要求 real
+index 的 `git write-tree` ID 與已驗證 candidate tree ID 完全相等；這同時偵測 selected source
+在驗證期間被修改、刪除或因 filter 產生不同 index bytes。另拒絕 `public/` 被 tracked／staged、
+並只對 staged candidate 執行 `git diff --cached --check`，不讓被排除的 unrelated dirty files
+誤阻擋發布。最後顯示 diff，建立普通 commit；commit 後、push 前再要求 commit
+tree ID 等於 candidate tree ID，否則停止且不得 push。成功時只做 fast-forward push 到
 `origin/main`；不得 force push。GitHub Actions 才是 production build、artifact upload 與
 deploy 的唯一位置；`public/` 永遠列入 `.gitignore`，不提交、不推送。
 
@@ -302,6 +357,10 @@ RSS、sitemap、canonical 與基本 Open Graph（不含 `og:image`）。
 文章級主題、讀者帳號、SSR、runtime theme switch、Hugo theme、`module.imports`／遠端 module
 與遠端圖片。它們
 有實際需求時另寫 ADR。
+
+流程圖是因 MVP 沒有實際需求而排除；不是宣稱 D2／Graphviz 等 pinned native binary
+方案不可行。未來若有文章需要圖表，再以 enhancement ADR 比較其版本、checksum、授權、
+SVG 安全與維護成本。
 
 ## 參考
 

@@ -26,6 +26,13 @@ relativeURLs = false
 canonifyURLs = false
 ```
 
+語言鍵是 `locale`：`languageCode` 自 Hugo v0.158.0 起 deprecated，官方要求改用 `locale`。
+本站是單語網站，因此不建立 `[languages]` 區段，也不設 `defaultContentLanguage`。
+
+設定寫對不代表輸出正確，所以第一個 Hugo gate 要斷言生成結果本身：
+`<html lang="zh-Hant-TW">`、RSS `<language>zh-Hant-TW</language>` 與預期的
+Open Graph locale。設定存在但輸出錯誤仍算失敗。
+
 `baseURL` 必須包含尾斜線。模板使用 `.RelPermalink`、`.Permalink`、`relURL`
 與 `absURL`；不得散落手寫 `/self_blog/`，也不得產生未帶 project base 的
 root-relative URL。`relativeURLs` 保持關閉，避免 Hugo 的粗略 post-processing
@@ -134,20 +141,27 @@ source = 'media'
 target = 'assets/images'
 ```
 
+宣告任何 `module.mounts` 會取代 Hugo 的全部預設 mounts，所以上表必須完整保留目前使用的
+`assets`、`content`、`layouts`、`static` 與 `media`。MVP 刻意不用 `data`、`i18n`、
+`archetypes`；未來啟用任一項時，必須同步新增 mount 與 fixture，避免來源被靜默忽略。
+
 文章使用本地 logical path，例如：
 
 ```markdown
 ![驗證命令的終端機輸出](images/first-post/terminal.webp)
 ```
 
-自訂 `layouts/_default/_markup/render-image.html` 只接受 local resource：
+自訂 `layouts/_markup/render-image.html`（Hugo 0.146 起的新 template 位置，不是舊制的
+`layouts/_default/_markup/`）只接受 local resource：
 
 - `http:`, `https:`, `//`, root-relative、`..`、query 與 fragment destination
   直接 `errorf`；一般外部 `<a href>` 不受此規則限制。
 - 以 `resources.Get` 取得 mount 後的 resource；不存在即失敗。
 - `.PlainText` 必須非空。
-- 只接受 `.png`、`.jpg`、`.jpeg` 或 `.webp`；`reflect.IsImageResourceWithMeta` 必須為真，並成功取得正整數
-  `.Width`、`.Height`，否則以 `errorf` 讓 build 失敗。
+- 只接受 `.png`、`.jpg`、`.jpeg` 或 `.webp`；接著 `reflect.IsImageResourceWithMeta`
+  （Hugo v0.157.0 起提供，用途正是判斷能否從該 resource 取得 dimensions 與 metadata）
+  必須為真，才讀取並要求正整數 `.Width`、`.Height`；任一項不成立即以 `errorf` 讓 build
+  失敗。`.ResourceType`／`.MediaType` 可作補充 assertion。
 - PowerShell 檔案 gate 以來源檔實際 byte length 檢查不得超過 200 KiB；Hugo
   validation partial 檢查最長邊不得超過 1600px。
 - 呼叫 `.RelPermalink` 時只發布真正被文章引用的 resource，輸出路徑是
@@ -160,7 +174,12 @@ validation build 另掃描所有 mounted image resource，因此孤兒檔也會�
 ## 5. Build modes 與單一品質入口
 
 `public/` 永遠是可刪除、可重建的 ignored output，不得提交 Git。兩種 build 都
-指定明確 destination，且只在 repo 內的已知輸出目錄使用 `--cleanDestinationDir`：
+指定明確 destination，且只在 repo 內的已知輸出目錄使用 `--cleanDestinationDir`。
+
+**三個產出目錄都必須在 `.gitignore` 裡**：`public/`、`resources/` 與下面 validation build
+用的 `.hugo-validation/`。即使 §8 允許無關的 unstaged／untracked 變更存在，build output 仍不應
+污染 `git status`、排除清單或 staged 集合；三者也都不得被 Git tracked。`.gitignore` 必須在
+第一次執行 Hugo 前由獨立 cleanup commit 建立。
 
 ```powershell
 # 驗證全部內容，包括 draft、future、expired
@@ -177,6 +196,9 @@ pwsh -NoProfile -File scripts/verify-built-site.ps1 -Dist public
 
 `verify-built-site.ps1` 必須是無第三方套件的 PowerShell gate，檢查：
 
+- exact v0.165.0 lookup fixture 為每個使用中的 page kind／path-specific template、
+  `render-image`、`render-link` 與 `home.rss.xml` 放入不同 sentinel；artifact 必須出現正確
+  sentinel，不能以「Hugo build 成功」代替 lookup assertion。
 - Hugo output 只有 HTML、CSS、圖片、RSS、sitemap、favicon 等必要檔案。
 - 不存在 `.js`、`.mjs`、`<script>`、inline event handler、`javascript:` URL、
   iframe、embed 或自動載入的第三方資源。
@@ -189,6 +211,9 @@ pwsh -NoProfile -File scripts/verify-built-site.ps1 -Dist public
 - HTML 內的 internal URL、canonical、RSS、sitemap 都正確包含一次
   `/self_blog/`；沒有意外的 `/posts/...` root URL 或雙重 base。每個 same-site URL
   還必須解析到實際 artifact，含 fragment 時也要有對應 `id`。
+- page budget 以 raw artifact bytes 與解析出的 local auto-load closure 計算；fixture 證明
+  上限恰好通過、超過 1 byte 失敗，HTML preload、CSS `@import`／`url()`、image 與 JavaScript
+  不會被漏算或忽略。
 - `public/` 不含 Markdown、`media/`、`content/`、`docs/`、workflow、Hugo
   binary、module cache 或 source map。
 
@@ -216,6 +241,12 @@ feed。production 必須產生 Hugo 內建 `public/sitemap.xml`，並產生
 不讀取或建立月份欄位。PowerShell gate 以兩個以上月份 fixture 驗證每月只出現
 一次、文章歸組正確、draft 不出現。
 
+實際 production `/archive/` 每次 build 都必須符合 [ADR-0003](adr/0003-month-archive.md)：
+HTML、共用 CSS 與 favicon 的 raw artifact bytes 合計 ≤ 120 KiB、≤ 6 requests、
+0 JavaScript、0 image request。超標時 build fail closed；不得直接放寬 budget，必須另立 ADR
+在 static pagination 與月份獨立頁之間重新決定。`1 KiB = 1024 bytes`；request closure 與
+重複資源計數規則以 [architecture.md §6](architecture.md#6-訪客下載-hard-budget) 為準。
+
 ## 7. GitHub Pages Actions
 
 workflow 只使用 GitHub 官方 Actions，且實作時填入完整 40 位 commit SHA、release
@@ -228,13 +259,16 @@ metadata、artifact upload 與 deploy：
 - `actions/deploy-pages`
 
 Hugo binary 從官方 release 取得並驗證預先記錄的 v0.165.0 standard SHA-256；不
-使用第三方 Hugo installer。workflow 不執行 npm 或下載遠端 theme/module。
+使用第三方 Hugo installer。官方 manifest 中 Linux amd64 的 exact SHA-256 是
+`5c3a37a5450b3e386e5b75a87a790fea2d04a796d75e171216c80ef48a32b432`。Ubuntu job 必須先
+驗下載檔 checksum，再解壓並要求 `hugo version` 同時符合 `v0.165.0`、`linux/amd64`、
+standard；不能只檢查 workflow 文字。workflow 不執行 npm 或下載遠端 theme/module。
 
 觸發與權限：
 
-- pull request：checkout、Hugo version/checksum、validation build、production
-  build、artifact gate；不部署。
-- push `main`：同樣驗證後 upload artifact，再由獨立 deploy job 部署。
+- pull request：Ubuntu 跑完整 checksum、validation／production build、template sentinel、
+  artifact／base／link／0-JS／image／archive budget gate；Windows 跑作者流程與跨平台子集；不部署。
+- push `main`：同樣等待必要 jobs 通過後，只由 Ubuntu upload artifact，再由獨立 deploy job 部署。
 - `workflow_dispatch`：非 main 只驗證；只有 main 可 upload/deploy。
 - build job 只有 `contents: read` 與 Pages metadata 所需權限；deploy job 才有
   `pages: write`、`id-token: write`。
@@ -248,8 +282,12 @@ upload 的 path 必須是 `public/` 的內容本身，不是包著 `public/` 的
 
 MVP 的本機支援矩陣是 Windows amd64 與 Linux amd64，兩者都需 Git、PowerShell 7 與
 經 checksum 驗證的 Hugo v0.165.0 standard。PowerShell 腳本必須使用跨平台 path API，
-不得呼叫 Windows registry、`cmd.exe` 或假設大小寫不敏感；Ubuntu／Windows CI matrix
-執行相同 fixture。作者在兩個平台都只需執行：
+不得呼叫 Windows registry、`cmd.exe` 或假設大小寫不敏感。Ubuntu CI 跑完整 gate、效能與
+Pages path；Windows CI 只跑 checksum/version、PowerShell 解析、path normalization、
+content-unit selection、staging allowlist、圖片路徑與最小 Hugo smoke，不重跑效能、部署或
+完整站點 smoke。Windows job 在 fresh disposable Git fixture 中使用 `publish.ps1 -TestMode`
+執行到 candidate tree／staging assertion，並證明 HEAD 未變、沒有 commit、push 或網路寫入；
+只 parse 腳本不算通過。兩邊仍共用同一套 scripts；作者在兩個平台都只需執行：
 
 ```powershell
 pwsh -NoProfile -File scripts/publish.ps1
@@ -257,19 +295,32 @@ pwsh -NoProfile -File scripts/publish.ps1
 
 此指令必須：
 
-1. 確認 repo root、預期 remote、非 detached HEAD，以及 Hugo 正是 v0.165.0。
+1. 確認 repo root、預期 remote、非 detached HEAD、Hugo 正是 v0.165.0，且 real Git index
+   完全乾淨；不接受任何既有 staged 或 partial-staged state。
 2. 若只有一個變更的 article/page content unit，自動選取；若有多個，要求作者以
    `-Content <path>` 明確指定，不猜測。文章以 leaf directory 名稱擁有對應的
    `media/<post>/`；本次 media 集合是該目錄下所有變更（包含刪除），且留下的檔案都須被引用。
-3. 拒絕已 staged 或 unstaged 的任何選取集合外變更，也拒絕被 Git tracked 的 `public/`。
-4. 在受控的暫存 validation destination 執行含 draft 的 validation build。
-5. 在明確的 repo `public/` 目錄執行 production build 與完整 artifact gate。
-6. 只對選定 content unit 與上述 owned media 變更執行 `git add -- <exact paths>`，
-   並再次確認 staged path 與 allowlist 完全相等。
-7. 沒有可提交內容、工作樹在驗證期間發生異動、remote/upstream 不符或任一步驟
-   失敗時停止，不 commit、不 push。
-8. 驗證全綠後建立內容 commit，使用普通 `git push`；禁止 force push、
-   `--no-verify` 或 `git add -A`。
+3. 選定集合外的 unstaged／untracked 變更不阻止發布，但必須明列為「本次排除且不會提交」；
+   另拒絕被 Git tracked 的 `public/`。
+4. 以 temporary Git index 從 `HEAD` 精確加入本次選定 content unit 與 owned media（含新增、
+   修改、刪除），寫出唯一 candidate tree ID，再由該 tree materialize 隔離的 selected snapshot；
+   不得帶入其他工作樹變更，也不得用 `stash` 或 destructive reset 改寫原工作樹。
+5. 在 selected snapshot 內執行含 draft 的 validation build，再於其中明確的 `public/` 目錄
+   執行 production build 與完整 artifact gate。
+6. 回到原工作樹，只對選定 content unit 與上述 owned media 執行 `git add -- <exact paths>`；
+   staged path 必須等於 allowlist，且 real index 的 `git write-tree` ID 必須與已驗證 candidate
+   tree ID 完全相等，且 `git diff --cached --check` 必須通過；否則視為 selected source
+   race／byte mismatch 並停止。不得對被排除的 unrelated dirty paths 跑會阻擋發布的全樹 check。
+7. 沒有可提交內容、tree ID 不符、remote/upstream 不符或任一步驟失敗時停止，不 commit、
+   不 push；其他被排除的 unstaged／untracked path 保持原狀。
+8. 驗證全綠後建立內容 commit；commit 後、push 前再次要求 commit tree ID 等於 candidate tree
+   ID。相符才使用普通 `git push`；禁止 force push、`--no-verify` 或 `git add -A`。
+
+`-TestMode` 只能在 disposable fixture 使用：它走與 production 相同的選擇、temporary index、
+snapshot、verification 與 staging code path，但在 commit／push 前停止，並由測試斷言 HEAD 與
+任何 remote 均未改變。負向 fixture 至少涵蓋：無關 dirty config 不進 snapshot、untracked
+owned media 與刪除可正確進 candidate tree、驗證期間修改 selected source 會造成 tree ID
+mismatch、任一既有 staged path hard fail。
 
 網站程式、layout、workflow 或 policy 的修改必須先以獨立 commit 合併；發布指令
 只負責已審核程式上的指定 content unit 與其 media 變更。push 後由 Actions 重新 build
@@ -297,4 +348,4 @@ snapshot 的授權／導入另列為 Deferred workstream，不作為 Hugo site i
 - [Hugo sitemap templates](https://gohugo.io/templates/sitemap/)
 - [Hugo custom 404](https://gohugo.io/templates/404/)
 - [Hugo build command](https://gohugo.io/commands/hugo_build/)
-- [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-actions)
+- [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
