@@ -1,0 +1,11 @@
+{{ define "main" }}
+<header class="page-header">
+  <p class="eyebrow">Taxonomy</p>
+  <h1>{{ .Title }}</h1>
+  <p class="page-description">依標籤找到相關文章。</p>
+</header>
+<div class="term-grid">
+  {{ range .Data.Terms.Alphabetical }}<a href="{{ .Page.RelPermalink }}">#{{ .Page.LinkTitle }} · {{ .Count }}</a>{{ else }}<p class="empty">目前沒有標籤。</p>{{ end }}
+</div>
+{{ end }}
+

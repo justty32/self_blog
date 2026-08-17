@@ -1,0 +1,13 @@
+{{- $alt := strings.TrimSpace .PlainText -}}
+{{- if not $alt -}}{{ errorf "圖片必須提供 alt text：%s" .Position }}{{- end -}}
+{{- $url := urls.Parse .Destination -}}
+{{- if or $url.IsAbs (strings.HasPrefix .Destination "/") -}}
+  {{- errorf "文章圖片必須放在同一個 post 資料夾並使用相對路徑：%s" .Destination -}}
+{{- end -}}
+{{- with .PageInner.Resources.GetMatch .Destination -}}
+  {{- if ne .ResourceType "image" -}}{{ errorf "不是可用的圖片：%s" $.Destination }}{{- end -}}
+<img src="{{ .RelPermalink }}" alt="{{ $alt }}" width="{{ .Width }}" height="{{ .Height }}" loading="lazy" decoding="async"{{ with $.Title }} title="{{ . }}"{{ end }}>
+{{- else -}}
+  {{- errorf "找不到文章圖片：%s" .Destination -}}
+{{- end -}}
+

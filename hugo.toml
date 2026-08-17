@@ -1,0 +1,43 @@
+baseURL = "https://justty32.github.io/self_blog/"
+title = "justty32"
+locale = "zh-Hant-TW"
+timeZone = "Asia/Taipei"
+hasCJKLanguage = true
+enableRobotsTXT = true
+publishDir = "public"
+relativeURLs = false
+canonifyURLs = false
+noBuildLock = true
+
+[params]
+  description = "程式、工具與日常實作筆記。"
+
+[permalinks.page]
+  posts = "/posts/:contentbasename/"
+
+[outputs]
+  home = ["html", "rss"]
+  section = ["html"]
+  taxonomy = ["html"]
+  term = ["html"]
+  page = ["html"]
+
+[markup.goldmark.renderer]
+  unsafe = false
+
+[markup.highlight]
+  codeFences = true
+  guessSyntax = false
+  noClasses = false
+
+[security.exec]
+  allow = []
+  osEnv = []
+
+[security.funcs]
+  getenv = []
+
+[security.http]
+  urls = []
+  methods = []
+

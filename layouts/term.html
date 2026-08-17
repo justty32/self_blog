@@ -1,0 +1,11 @@
+{{ define "main" }}
+<header class="page-header">
+  <p class="eyebrow">Tagged</p>
+  <h1>#{{ .Title }}</h1>
+  <p class="page-description">共 {{ len .Pages }} 篇文章。</p>
+</header>
+<div class="post-list">
+  {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
+</div>
+{{ end }}
+

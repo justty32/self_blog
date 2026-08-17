@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>{{ partial "head.html" . }}</head>
+  <body>
+    {{ partial "header.html" . }}
+    <main class="site-shell">
+      <section class="hero">
+        <p class="eyebrow">404 / Not found</p>
+        <h1>這頁不在這裡。</h1>
+        <p class="hero-copy">網址可能已經移動，或從來沒有存在過。</p>
+        <div><a class="button primary" href="{{ "" | relURL }}">回到首頁</a></div>
+      </section>
+    </main>
+    {{ partial "footer.html" . }}
+  </body>
+</html>
+

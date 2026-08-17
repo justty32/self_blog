@@ -1,0 +1,27 @@
+{{ define "main" }}
+<section class="hero">
+  <p class="eyebrow">Build notes / field log</p>
+  <h1>{{ .Site.Title }}</h1>
+  <p class="hero-copy">{{ .Description | default .Site.Params.description }}</p>
+  <div class="hero-actions">
+    <a class="button primary" href="{{ "posts/" | relURL }}">開始閱讀</a>
+    <a class="button" href="{{ "archive/" | relURL }}">按月份瀏覽</a>
+  </div>
+</section>
+
+{{ $posts := partial "published-posts.html" . }}
+<section aria-labelledby="latest-posts">
+  <div class="section-heading">
+    <h2 id="latest-posts">最新文章</h2>
+    <a href="{{ "posts/" | relURL }}">全部文章 →</a>
+  </div>
+  {{ if $posts }}
+  <div class="post-list">
+    {{ range first 6 $posts }}{{ partial "post-card.html" . }}{{ end }}
+  </div>
+  {{ else }}
+  <p class="empty">文章正在路上。</p>
+  {{ end }}
+</section>
+{{ end }}
+

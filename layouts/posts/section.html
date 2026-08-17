@@ -1,0 +1,12 @@
+{{ define "main" }}
+<header class="page-header">
+  <p class="eyebrow">All posts</p>
+  <h1>{{ .Title }}</h1>
+  {{ with .Description }}<p class="page-description">{{ . }}</p>{{ end }}
+</header>
+{{ $posts := partial "published-posts.html" . }}
+<div class="post-list">
+  {{ range $posts }}{{ partial "post-card.html" . }}{{ else }}<p class="empty">目前沒有文章。</p>{{ end }}
+</div>
+{{ end }}
+

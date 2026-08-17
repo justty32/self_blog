@@ -1,0 +1,13 @@
+<article class="post-card">
+  <div class="meta">
+    <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+  </div>
+  <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+  <p>{{ .Description }}</p>
+  {{ with .GetTerms "tags" }}
+  <ul class="tags" aria-label="標籤">
+    {{ range . }}<li><a class="tag" href="{{ .RelPermalink }}">#{{ .LinkTitle }}</a></li>{{ end }}
+  </ul>
+  {{ end }}
+</article>
+
