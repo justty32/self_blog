@@ -136,8 +136,9 @@ article route、每個 Hugo 實際 term 有 taxonomy page、archive 內每個 `Y
 
 ## 4. 圖片
 
-本站沒有 cover、縮圖、角色圖、裝飾圖或 `og:image`。`miku-cyber` 只是配色風格；圖片只可作
-技術截圖（終端輸出、設定畫面、實際結果）。首頁、列表與純文字文章不預留圖位。
+本站沒有 cover、縮圖、角色圖或內文裝飾圖。`miku-cyber` 只是配色風格；文章圖片只可作
+技術截圖（終端輸出、設定畫面、實際結果）。另有一張全站共用的 `og:image`，不在首頁、列表
+或純文字文章內顯示。
 
 ### 圖片與文章分開放，但都在本 repo
 
@@ -351,7 +352,7 @@ deploy 的唯一位置；`public/` 永遠列入 `.gitignore`，不提交、不�
 
 MVP：首頁、文章列表／靜態分頁、archive index（月份 anchor）、文章頁、tag index、per-tag
 page、一般 Markdown 頁面、404、GFM、heading anchors、build-time code highlighting、技術截圖、
-RSS、sitemap、canonical 與基本 Open Graph（不含 `og:image`）。
+RSS、sitemap、canonical、Open Graph 與全站共用的社群預覽圖。
 
 暫不包含：Mermaid／其他流程圖 renderer、CMS、留言、全文搜尋、analytics、多作者、國際化、
 文章級主題、讀者帳號、SSR、runtime theme switch、Hugo theme、`module.imports`／遠端 module

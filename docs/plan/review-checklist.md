@@ -20,7 +20,7 @@
 - [ ] Hugo 原生 tags（及需要時的 categories）具備 taxonomy index／term 靜態頁；`/archive/` 是單一索引頁，以每個 `YYYY-MM` anchor 分組，不另承諾月份 route；term 名稱與 URL normalization 不由自訂 slug validator 取代。
 - [ ] 流程圖因 MVP 沒有實際需求而排除；規格未錯稱 D2／Graphviz 等 native binary 不可行，未來有需求時須另立 enhancement ADR。
 - [ ] `content/<page>.md` 可產生 About／Contact 等一般 Markdown 頁，不需新增 section 或 template registry；作者指南為 `docs/AUTHORING.md`。
-- [ ] 圖片僅限 `media/` 的本地技術截圖；無 cover、裝飾圖、角色圖或 `og:image`；只複製公開文章實際引用的檔案。
+- [ ] 文章圖片僅限本地技術截圖；無 cover、裝飾圖或角色圖；另有一張全站共用的 `og:image`。
 - [ ] CSS theme 以 semantic tokens 與自有 CSS 實作藍／青綠輕科幻風格；換色不改內容與模板結構，且有 responsive、鍵盤焦點、對比與 reduced-motion evidence。
 
 ## 2. 輸出與供應鏈 gate

@@ -2,8 +2,9 @@
 <html lang="zh-Hant-TW">
   <head>{{ partial "head.html" . }}</head>
   <body>
+    <a class="skip-link" href="#main">跳至內容</a>
     {{ partial "header.html" . }}
-    <main class="site-shell">
+    <main id="main" class="site-shell">
       <section class="hero">
         <p class="eyebrow">404 / Not found</p>
         <h1>這頁不在這裡。</h1>
@@ -14,4 +15,3 @@
     {{ partial "footer.html" . }}
   </body>
 </html>
-

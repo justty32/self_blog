@@ -3,7 +3,6 @@ title = "justty32"
 locale = "zh-Hant-TW"
 timeZone = "Asia/Taipei"
 hasCJKLanguage = true
-enableRobotsTXT = true
 publishDir = "public"
 relativeURLs = false
 canonifyURLs = false
@@ -11,9 +10,11 @@ noBuildLock = true
 
 [params]
   description = "程式、工具與日常實作筆記。"
+  socialImage = "social-preview.jpg"
+  socialImageAlt = "深藍色開發者工作空間與青綠色數位線條插畫"
 
 [permalinks.page]
-  posts = "/posts/:contentbasename/"
+  posts = "/posts/:year/:contentbasename/"
 
 [outputs]
   home = ["html", "rss"]
@@ -40,4 +41,3 @@ noBuildLock = true
 [security.http]
   urls = []
   methods = []
-

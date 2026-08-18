@@ -61,7 +61,7 @@ static/
 
 ```toml
 [permalinks.page]
-posts = '/posts/:contentbasename/'
+posts = '/posts/:year/:contentbasename/'
 ```
 
 預定輸出：

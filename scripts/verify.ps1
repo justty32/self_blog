@@ -1,7 +1,10 @@
 #requires -Version 7.0
 
 [CmdletBinding()]
-param([string]$HugoPath = '')
+param(
+    [string]$HugoPath = '',
+    [string]$ToolCacheRoot = ''
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -11,7 +14,7 @@ $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $PSScriptRoot 'get-hugo.ps1')
 
 if ([string]::IsNullOrWhiteSpace($HugoPath)) {
-    $HugoPath = Get-Hugo165
+    $HugoPath = Get-Hugo165 -ToolCacheRoot $ToolCacheRoot
 }
 if (-not (Test-Path -LiteralPath $HugoPath -PathType Leaf)) {
     throw "找不到 Hugo：$HugoPath"
@@ -33,14 +36,17 @@ foreach ($required in @(
     'index.html',
     'posts/index.html',
     'posts/hello-world/index.html',
+    'posts/2026/hello-world/index.html',
     'tags/index.html',
     'archive/index.html',
     'about/index.html',
     'contact/index.html',
     'index.xml',
     'sitemap.xml',
+    'robots.txt',
     '404.html',
-    'css/site.css'
+    'css/site.css',
+    'social-preview.jpg'
 )) {
     if (-not (Test-Path -LiteralPath (Join-Path $publicDir $required) -PathType Leaf)) {
         throw "建置缺少必要檔案：public/$required"
@@ -67,4 +73,3 @@ foreach ($html in Get-ChildItem -LiteralPath $publicDir -Recurse -File -Filter '
 $files = @(Get-ChildItem -LiteralPath $publicDir -Recurse -File)
 $bytes = ($files | Measure-Object -Property Length -Sum).Sum
 Write-Host "VERIFY PASS — $($files.Count) files, $bytes bytes, 0 JavaScript"
-

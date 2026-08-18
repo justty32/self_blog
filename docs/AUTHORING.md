@@ -51,7 +51,7 @@ categories:
 - `tags` 會自動產生 `/tags/` 與每個標籤頁。
 - `date` 會決定文章排序及 `/archive/` 的月份分組。
 - `draft: true` 不會出現在正式網站；本機預覽時加 `--buildDrafts` 才看得到。
-- 資料夾短名會成為網址，例如 `my-first-post` → `/posts/my-first-post/`。
+- 發布年份與資料夾短名會組成網址，例如上面的文章會位於 `/posts/2026/my-first-post/`。
 
 ## 加入圖片
 
@@ -127,4 +127,3 @@ $hugo = ./scripts/get-hugo.ps1
 4. 由 GitHub Actions 重新建置並部署 Pages。
 
 若同時修改了版型、CSS、設定或 workflow，請先把那些網站程式變更另行 review、commit、push，再發布文章。
-
