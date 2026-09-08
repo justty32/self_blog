@@ -177,44 +177,40 @@ function Get-Hugo165 {
         $ToolCacheRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'self-blog-hugo-cache'
     }
     $toolRoot = Get-NormalizedFullPath $ToolCacheRoot
-    $osTempRoot = Get-NormalizedFullPath ([System.IO.Path]::GetTempPath())
-    # The cache may be caller-selected, but every existing component is still
-    # checked before it is used.  Staging is always a fresh GUID directory in
-    # the verified OS temp tree, so an attacker cannot pre-populate it.
-    [void](Assert-SafePathWithinRoot -Path $osTempRoot -Root $osTempRoot)
+    # Keep private staging on the cache volume so promotion works even when
+    # a caller-selected cache is on a different drive from the OS temp folder.
     [void](Assert-SafePathWithinRoot -Path $toolRoot -Root $toolRoot)
     $toolRootParent = [System.IO.Path]::GetDirectoryName($toolRoot)
     Ensure-SafeDirectory -Path $toolRoot -Root $toolRootParent
     $cacheLockPath = Join-Path $toolRoot '.hugo-cache.lock'
     [void](Assert-SafePathWithinRoot -Path $cacheLockPath -Root $toolRoot)
     $cacheLock = Enter-HugoCacheLock -LockPath $cacheLockPath
-    $cacheDir = Join-Path $toolRoot (Join-Path $manifest.Version 'archives')
-    $toolsDir = Join-Path $toolRoot (Join-Path $manifest.Version (Join-Path 'tools' $Platform))
-    $archivePath = Join-Path $cacheDir $artifact.FileName
-    $binaryPath = Join-Path $toolsDir $artifact.BinaryName
-
-    Ensure-SafeDirectory -Path $cacheDir -Root $toolRoot
-    [void](Assert-SafePathWithinRoot -Path $archivePath -Root $toolRoot)
-    $officialSha = Get-Hugo165OfficialChecksum -Manifest $manifest -Platform $Platform
-
-    # A valid cached installation is immutable input for this project. Reusing
-    # it avoids needless extraction and also permits `verify.ps1` to run while
-    # the same Hugo binary is serving a local preview on Windows.
-    if ((Test-Path -LiteralPath $archivePath -PathType Leaf) -and
-        (Test-Path -LiteralPath $binaryPath -PathType Leaf)) {
-        Assert-SafeDirectoryTree -Path $toolsDir
-        Assert-Hugo165ArchiveHash -ArchivePath $archivePath -ExpectedSha256 $officialSha
-        Assert-Hugo165Version -BinaryPath $binaryPath -Platform $Platform | Out-Null
-        $cacheLock.Dispose()
-        $cacheLock = $null
-        return $binaryPath
-    }
-
-    $stageRoot = Join-Path $osTempRoot ("self-blog-hugo-stage-{0}" -f [guid]::NewGuid().ToString('N'))
-    [void](Assert-SafePathWithinRoot -Path $stageRoot -Root $osTempRoot)
-    New-Item -ItemType Directory -Path $stageRoot -ErrorAction Stop | Out-Null
+    $stageRoot = $null
     try {
-        [void](Assert-SafePathWithinRoot -Path $stageRoot -Root $osTempRoot)
+        $cacheDir = Join-Path $toolRoot (Join-Path $manifest.Version 'archives')
+        $toolsDir = Join-Path $toolRoot (Join-Path $manifest.Version (Join-Path 'tools' $Platform))
+        $archivePath = Join-Path $cacheDir $artifact.FileName
+        $binaryPath = Join-Path $toolsDir $artifact.BinaryName
+
+        Ensure-SafeDirectory -Path $cacheDir -Root $toolRoot
+        [void](Assert-SafePathWithinRoot -Path $archivePath -Root $toolRoot)
+        $officialSha = Get-Hugo165OfficialChecksum -Manifest $manifest -Platform $Platform
+
+        # A valid cached installation is immutable input for this project. Reusing
+        # it avoids needless extraction and also permits `verify.ps1` to run while
+        # the same Hugo binary is serving a local preview on Windows.
+        if ((Test-Path -LiteralPath $archivePath -PathType Leaf) -and
+            (Test-Path -LiteralPath $binaryPath -PathType Leaf)) {
+            Assert-SafeDirectoryTree -Path $toolsDir
+            Assert-Hugo165ArchiveHash -ArchivePath $archivePath -ExpectedSha256 $officialSha
+            Assert-Hugo165Version -BinaryPath $binaryPath -Platform $Platform | Out-Null
+            return $binaryPath
+        }
+
+        $stageRoot = Join-Path $toolRoot ("self-blog-hugo-stage-{0}" -f [guid]::NewGuid().ToString('N'))
+        [void](Assert-SafePathWithinRoot -Path $stageRoot -Root $toolRoot)
+        New-Item -ItemType Directory -Path $stageRoot -ErrorAction Stop | Out-Null
+        [void](Assert-SafePathWithinRoot -Path $stageRoot -Root $toolRoot)
         if ($IsLinux) { [System.IO.File]::SetUnixFileMode($stageRoot, [System.IO.UnixFileMode]::UserRead -bor [System.IO.UnixFileMode]::UserWrite -bor [System.IO.UnixFileMode]::UserExecute) }
         $stageArchive = Join-Path $stageRoot $artifact.FileName
         $archiveItem = $null
@@ -282,7 +278,7 @@ function Get-Hugo165 {
     }
     finally {
         if ($null -ne $cacheLock) { $cacheLock.Dispose() }
-        if (Test-Path -LiteralPath $stageRoot -PathType Container) {
+        if ($null -ne $stageRoot -and (Test-Path -LiteralPath $stageRoot -PathType Container)) {
             Assert-SafeDirectoryTree -Path $stageRoot
             Remove-Item -LiteralPath $stageRoot -Recurse -Force -ErrorAction Stop
         }

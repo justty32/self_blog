@@ -2,11 +2,11 @@
   <nav class="site-shell nav" aria-label="主要導覽">
     <a class="brand" href="{{ "" | relURL }}">{{ .Site.Title }}</a>
     <ul class="nav-links">
-      <li><a href="{{ "posts/" | relURL }}">文章</a></li>
-      <li><a href="{{ "tags/" | relURL }}">標籤</a></li>
-      <li><a href="{{ "archive/" | relURL }}">月份</a></li>
-      <li><a href="{{ "about/" | relURL }}">關於</a></li>
-      <li><a href="{{ "contact/" | relURL }}">聯絡</a></li>
+      <li><a href="{{ "posts/" | relURL }}"{{ if eq .RelPermalink ("posts/" | relURL) }} aria-current="page"{{ end }}>文章</a></li>
+      <li><a href="{{ "tags/" | relURL }}"{{ if eq .RelPermalink ("tags/" | relURL) }} aria-current="page"{{ end }}>標籤</a></li>
+      <li><a href="{{ "archive/" | relURL }}"{{ if eq .RelPermalink ("archive/" | relURL) }} aria-current="page"{{ end }}>月份</a></li>
+      <li><a href="{{ "about/" | relURL }}"{{ if eq .RelPermalink ("about/" | relURL) }} aria-current="page"{{ end }}>關於</a></li>
+      <li><a href="{{ "contact/" | relURL }}"{{ if eq .RelPermalink ("contact/" | relURL) }} aria-current="page"{{ end }}>聯絡</a></li>
     </ul>
   </nav>
 </header>

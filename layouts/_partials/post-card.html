@@ -1,8 +1,14 @@
+{{- $heading := .heading | default 2 -}}
+{{- with .page -}}
 <article class="post-card">
   <div class="meta">
     <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
   </div>
+  {{ if eq $heading 3 }}
   <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+  {{ else }}
+  <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+  {{ end }}
   <p>{{ .Description }}</p>
   {{ with .GetTerms "tags" }}
   <ul class="tags" aria-label="標籤">
@@ -10,4 +16,4 @@
   </ul>
   {{ end }}
 </article>
-
+{{- end -}}

@@ -1,0 +1,35 @@
+name: Verify Windows and Linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Cache Hugo
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: .hugo-tool-cache
+          key: ${{ runner.os }}-hugo-165-${{ hashFiles('scripts/Hugo-165.psd1') }}
+
+      - name: Test automation scripts
+        shell: pwsh
+        run: ./scripts/test-automation.ps1
+
+      - name: Build and verify
+        shell: pwsh
+        run: ./scripts/verify.ps1 -ToolCacheRoot (Join-Path $env:GITHUB_WORKSPACE '.hugo-tool-cache')

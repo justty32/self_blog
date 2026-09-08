@@ -5,7 +5,6 @@
   <p class="page-description">共 {{ len .Pages }} 篇文章。</p>
 </header>
 <div class="post-list">
-  {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ end }}
+  {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" (dict "page" .) }}{{ end }}
 </div>
 {{ end }}
-

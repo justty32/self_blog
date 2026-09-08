@@ -23,13 +23,13 @@ function Invoke-Git {
 $branch = Invoke-Git @('branch', '--show-current')
 if ($branch -cne 'main') { throw "發布只允許從 main branch 執行；目前是 '$branch'。" }
 
-$staged = @(Invoke-Git @('diff', '--cached', '--name-only', '--') -split "`r?`n" | Where-Object { $_ })
+$staged = @((Invoke-Git @('diff', '--cached', '--name-only', '-z', '--')) -split "`0" | Where-Object { $_ })
 if ($staged.Count -gt 0) { throw '請先處理既有 staged 變更，再執行發布。' }
 
 $trackedChanges = @(
-    @(Invoke-Git @('diff', '--name-only', '--') -split "`r?`n")
-    @(Invoke-Git @('ls-files', '--others', '--exclude-standard') -split "`r?`n")
-) | Where-Object { $_ }
+    (Invoke-Git @('diff', '--name-only', '-z', '--')) -split "`0" | Where-Object { $_ }
+    (Invoke-Git @('ls-files', '--others', '--exclude-standard', '-z')) -split "`0" | Where-Object { $_ }
+)
 $outsideContent = @($trackedChanges | Where-Object { -not $_.StartsWith('content/', [StringComparison]::Ordinal) })
 if ($outsideContent.Count -gt 0) {
     throw "發布文章前請先另外提交非內容變更：$($outsideContent -join ', ')"

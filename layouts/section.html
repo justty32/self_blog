@@ -5,7 +5,6 @@
   {{ with .Description }}<p class="page-description">{{ . }}</p>{{ end }}
 </header>
 <div class="post-list">
-  {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" . }}{{ else }}<p class="empty">目前沒有內容。</p>{{ end }}
+  {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" (dict "page" .) }}{{ else }}<p class="empty">目前沒有內容。</p>{{ end }}
 </div>
 {{ end }}
-

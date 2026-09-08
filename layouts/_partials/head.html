@@ -5,12 +5,19 @@
 {{- $socialImage := .Site.Params.socialImage | absURL -}}
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $description }}">
+{{ if eq .Kind "404" }}
+<meta name="robots" content="noindex">
+{{ else }}
 <link rel="canonical" href="{{ .Permalink }}">
+{{ end }}
+{{ with .Site.Home.OutputFormats.Get "rss" }}
+<link rel="alternate" type="{{ .MediaType.Type }}" title="{{ $.Site.Title }}" href="{{ .Permalink }}">
+{{ end }}
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
 {{- with resources.Get "css/site.css" }}
 <link rel="stylesheet" href="{{ .RelPermalink }}">
 {{- end }}
-<meta property="og:type" content="{{ if .IsPage }}article{{ else }}website{{ end }}">
+<meta property="og:type" content="{{ if and .IsPage (eq .Section "posts") }}article{{ else }}website{{ end }}">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $description }}">
 <meta property="og:url" content="{{ .Permalink }}">

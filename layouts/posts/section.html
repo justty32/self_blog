@@ -6,7 +6,6 @@
 </header>
 {{ $posts := partial "published-posts.html" . }}
 <div class="post-list">
-  {{ range $posts }}{{ partial "post-card.html" . }}{{ else }}<p class="empty">目前沒有文章。</p>{{ end }}
+  {{ range $posts }}{{ partial "post-card.html" (dict "page" .) }}{{ else }}<p class="empty">目前沒有文章。</p>{{ end }}
 </div>
 {{ end }}
-

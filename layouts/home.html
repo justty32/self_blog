@@ -17,11 +17,10 @@
   </div>
   {{ if $posts }}
   <div class="post-list">
-    {{ range first 6 $posts }}{{ partial "post-card.html" . }}{{ end }}
+    {{ range first 6 $posts }}{{ partial "post-card.html" (dict "page" . "heading" 3) }}{{ end }}
   </div>
   {{ else }}
   <p class="empty">文章正在路上。</p>
   {{ end }}
 </section>
 {{ end }}
-

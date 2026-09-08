@@ -4,11 +4,15 @@
 
 ## 第一次準備
 
-Windows 與 Linux 都需要：
+目前自動下載工具支援 Windows 與 Linux 的 x86-64（amd64）。兩個平台都需要：
 
 - Git
 - PowerShell 7（`pwsh`）
 - 網路連線；`scripts/get-hugo.ps1` 會下載並驗證固定的 Hugo v0.165.0，不需要 npm 或 Node
+
+Linux 同樣使用 PowerShell 7，請先確認 `pwsh --version` 可執行；`.ps1` 指令應由 `pwsh` 執行，不要交給 Bash。ARM64 目前不在自動下載工具的支援範圍。
+
+GitHub Actions 的 `Verify Windows and Linux` 會在 pull request 與 main 更新時，分別執行兩個平台的建置與腳本回歸測試。
 
 第一次部署前，到 GitHub repository 的 **Settings → Pages → Build and deployment**，把 Source 選為 **GitHub Actions**。
 
@@ -110,6 +114,15 @@ $hugo = ./scripts/get-hugo.ps1
 ```
 
 產物位於 ignored 的 `public/`，不要提交它。
+
+從 Linux Bash 執行檢查：
+
+```bash
+pwsh -NoProfile -File ./scripts/verify.ps1
+pwsh -NoProfile -File ./scripts/test-automation.ps1
+```
+
+第二個指令離線測試快取鎖與發布前置檢查，使用獨立暫存 repository，不會發布文章。
 
 ## 一個指令發布
 

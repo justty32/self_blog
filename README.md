@@ -3,6 +3,7 @@
 一個輕量的 Hugo 個人部落格。文章以 Markdown 撰寫，建置後提供普通 HTML 與 CSS；讀者端不載入 JavaScript framework。
 
 - 本機檢查：`pwsh ./scripts/verify.ps1`
+- 自動化回歸檢查：`pwsh ./scripts/test-automation.ps1`（離線測試，不會發布）
 - 發布內容：`pwsh ./scripts/publish.ps1 -Message "content: add post"`
 - 寫作說明：[docs/AUTHORING.md](docs/AUTHORING.md)
 
