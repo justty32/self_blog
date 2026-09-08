@@ -6,6 +6,10 @@ param([string]$Message = '')
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# A windowless Windows process may otherwise encode redirected diagnostics as
+# ASCII. Match the UTF-8 readers used by Invoke-ProcessNoWindow.
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 . (Join-Path $PSScriptRoot 'lib/Common.ps1')
 
@@ -46,4 +50,3 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
 Invoke-Git @('commit', '-m', $Message) | Out-Null
 Invoke-Git @('push', 'origin', 'HEAD:main') | Out-Null
 Write-Host '發布完成。GitHub Actions 會建置並部署網站。'
-
