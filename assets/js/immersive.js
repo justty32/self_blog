@@ -271,10 +271,11 @@ function createLuxuryAtmosphere() {
   if (!context) { canvas.remove(); return { destroy() {} }; }
   const text = createLuxuryText();
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2, targetX: window.innerWidth / 2, targetY: window.innerHeight / 2, down: false };
+  const pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2, targetX: window.innerWidth / 2, targetY: window.innerHeight / 2, down: false, pressure: 0, velocityX: 0, velocityY: 0 };
   let width = 1, height = 1, frame = 0, previous = 0, time = 0, disposed = false;
-  let scrollDepth = 0, scrollTarget = window.scrollY || 0, primary = [], secondary = [], day = false, styleName = 'grid';
+  let scrollDepth = 0, scrollTarget = window.scrollY || 0, primary = [], secondary = [], textColor = [], day = false, styleName = 'grid';
   const trails = [], waves = [];
+  let ink = null, lastInkPointer = null;
   const stars = Array.from({ length: 320 }, (_, index) => ({
     x: ((index * 161 + 27) % 617) / 617 * 2 - 1,
     y: ((index * 233 + 53) % 607) / 607 * 2 - 1,
@@ -289,20 +290,27 @@ function createLuxuryAtmosphere() {
   function updateColors() {
     const style = getComputedStyle(root);
     primary = rgb(style.getPropertyValue('--seed-primary')); secondary = rgb(style.getPropertyValue('--seed-secondary'));
-    day = root.dataset.mode === 'day'; styleName = root.dataset.style || 'grid';
+    textColor = rgb(style.getPropertyValue('--seed-text'));
+    day = root.dataset.mode === 'day';
+    const nextStyle = root.dataset.style || 'grid';
+    if (nextStyle !== styleName) lastInkPointer = null;
+    styleName = nextStyle;
   }
   function resize() {
     width = Math.max(1, window.innerWidth); height = Math.max(1, window.innerHeight);
     const ratio = Math.min(window.devicePixelRatio || 1, 2.5);
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ink?.resize(width, height);
   }
   function curveY(x, band) {
     const base = height * (.12 + band * .16);
     const flow = Math.sin(x / width * 5.5 + time * .22 + band * 1.3) * height * .075;
     const second = Math.cos(x / width * 10 - time * .13 + band) * height * .023;
-    const distance = Math.abs(x - pointer.x) / Math.max(1, width * .3);
-    const pull = Math.exp(-distance * distance * 2) * (pointer.y - base) * (pointer.down ? .24 : .09);
+    const restingY = base + flow + second;
+    const radius = Math.max(90, Math.min(200, height * .22));
+    const distance = Math.hypot(x - pointer.x, restingY - pointer.y) / radius;
+    const pull = Math.exp(-distance * distance * 2) * Math.tanh((pointer.y - restingY) / radius) * (12 + pointer.pressure * 14);
     return base + flow + second + pull + Math.sin(scrollDepth * .0007 + band) * 20;
   }
   function draw(now) {
@@ -311,11 +319,19 @@ function createLuxuryAtmosphere() {
     const delta = previous ? Math.min((now - previous) / 1000, .05) : 1 / 60;
     previous = now; time += delta;
     const ease = 1 - Math.exp(-delta * 6);
+    const oldX = pointer.x, oldY = pointer.y;
     pointer.x += (pointer.targetX - pointer.x) * ease; pointer.y += (pointer.targetY - pointer.y) * ease;
+    pointer.velocityX = (pointer.x - oldX) / delta; pointer.velocityY = (pointer.y - oldY) / delta;
+    pointer.pressure += ((pointer.down ? 1 : 0) - pointer.pressure) * (1 - Math.exp(-delta * 5));
     scrollDepth += (scrollTarget - scrollDepth) * ease;
     context.clearRect(0, 0, width, height);
-    // Six translucent ribbons bend into the pointer and respond to page depth.
-    for (let band = 0; band < (styleName === 'grid' ? 2 : 6); band++) {
+    if (styleName === 'paper') {
+      if (!ink) { ink = createInkFluid(); ink.resize(width, height); }
+      ink.update(delta, { x: pointer.targetX, y: pointer.targetY, down: pointer.down, pressure: pointer.pressure });
+      ink.draw(context, width, height, { primary, secondary, day });
+    }
+    // Light ribbons retain their own flow; input perturbs only a small local area.
+    for (let band = 0; band < (styleName === 'paper' ? 0 : styleName === 'grid' ? 2 : 6); band++) {
       const gradient = context.createLinearGradient(0, 0, width, 0);
       gradient.addColorStop(0, color(primary, 0)); gradient.addColorStop(.24, color(primary, day ? .065 : .1));
       gradient.addColorStop(.72, color(secondary, day ? .08 : .14)); gradient.addColorStop(1, color(secondary, 0));
@@ -347,7 +363,8 @@ function createLuxuryAtmosphere() {
       context.beginPath();
       for (let step = 0; step <= 30; step++) {
         const x = width * step / 30;
-        const warp = Math.sin(step * .45 + time * .7 + row) * 7 * z + (pointer.down ? Math.sin((x - pointer.x) * .02 + time * 3) * 15 * z : 0);
+        const local = Math.exp(-Math.pow(Math.hypot(x - pointer.x, y - pointer.y) / 170, 2));
+        const warp = Math.sin(step * .45 + time * .7 + row) * 7 * z + pointer.pressure * local * Math.sin((x - pointer.x) * .02 + time * 3) * 15 * z;
         if (!step) context.moveTo(x, y + warp); else context.lineTo(x, y + warp);
       }
       context.stroke();
@@ -366,7 +383,7 @@ function createLuxuryAtmosphere() {
       let y = cy + star.y * height * .76 * perspective + (pointer.y - cy) * z * .045;
       const dx = pointer.x - x, dy = pointer.y - y, distance = Math.hypot(dx, dy);
       if (distance < 180) {
-        const influence = (1 - distance / 180) * (pointer.down ? .3 : .09) * z;
+        const influence = (1 - distance / 180) * (.09 + pointer.pressure * .21) * z;
         x += dx * influence; y += dy * influence;
       }
       if (x < -5 || x > width + 5 || y < -5 || y > height + 5) continue;
@@ -382,7 +399,7 @@ function createLuxuryAtmosphere() {
     context.shadowBlur = 0;
     for (const point of trails) point.age += delta;
     while (trails.length && trails[0].age > .9) trails.shift();
-    if (trails.length > 1) {
+    if (styleName !== 'paper' && trails.length > 1) {
       for (const offset of [-4, 0, 4]) {
         context.shadowColor = color(offset ? secondary : primary, .7); context.shadowBlur = 9;
         context.lineWidth = offset ? 1.1 : 2.1;
@@ -398,19 +415,27 @@ function createLuxuryAtmosphere() {
     for (let index = waves.length - 1; index >= 0; index--) {
       const wave = waves[index]; wave.age += delta;
       if (wave.age > 2.4) { waves.splice(index, 1); continue; }
-      for (let ring = 0; ring < 3; ring++) {
+      for (let ring = 0; ring < (styleName === 'paper' ? 1 : 3); ring++) {
         const age = wave.age - ring * .14; if (age < 0) continue;
-        context.strokeStyle = color(ring % 2 ? secondary : primary, Math.pow(1 - wave.age / 2.4, 2) * .55);
+        context.strokeStyle = color(ring % 2 ? secondary : primary, Math.pow(1 - wave.age / 2.4, 2) * (styleName === 'paper' ? .1 : .55));
         context.lineWidth = 1.1 - ring * .2;
         context.beginPath(); context.ellipse(wave.x, wave.y, 10 + age * 150, 10 + age * 120, 0, 0, Math.PI * 2); context.stroke();
       }
     }
     drawLuxurySignature(context, { style: styleName, day, width, height, time, pointer, primary, secondary, scrollDepth });
+    drawLightField(context, { style: styleName, day, width, height, time, pointer, primary, secondary, text: textColor, scrollDepth });
     text.update({ x: pointer.x, y: pointer.y }, delta);
     frame = requestAnimationFrame(draw);
   }
   function move(event) {
     pointer.targetX = event.clientX; pointer.targetY = event.clientY;
+    if (styleName === 'paper' && ink) {
+      const dx = lastInkPointer ? event.clientX - lastInkPointer.x : 0;
+      const dy = lastInkPointer ? event.clientY - lastInkPointer.y : 0;
+      const distance = Math.hypot(dx, dy);
+      if (distance > .2) ink.inject(event.clientX, event.clientY, dx, dy, Math.min(.42, distance * (pointer.down ? .025 : .014)));
+      lastInkPointer = { x: event.clientX, y: event.clientY };
+    }
     trails.push({ x: event.clientX, y: event.clientY, age: 0 });
     if (trails.length > 90) trails.shift();
   }
@@ -422,7 +447,7 @@ function createLuxuryAtmosphere() {
   }
   function up() { pointer.down = false; }
   function scroll() { scrollTarget = window.scrollY || 0; }
-  function stop() { if (frame) cancelAnimationFrame(frame); frame = 0; previous = 0; pointer.down = false; }
+  function stop() { if (frame) cancelAnimationFrame(frame); frame = 0; previous = 0; pointer.down = false; lastInkPointer = null; }
   function resume() {
     if (document.hidden || media.matches || disposed) stop();
     else if (!frame) frame = requestAnimationFrame(draw);
@@ -435,7 +460,7 @@ function createLuxuryAtmosphere() {
   updateColors(); resize(); resume();
   return {
     destroy() {
-      if (disposed) return; disposed = true; stop(); text.destroy();
+      if (disposed) return; disposed = true; stop(); text.destroy(); ink?.destroy(); ink = null;
       window.removeEventListener('pointermove', move); window.removeEventListener('pointerdown', down);
       window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
       window.removeEventListener('scroll', scroll); window.removeEventListener('resize', resize);
@@ -668,19 +693,8 @@ function drawLuxurySignature(context, state) {
     halo.addColorStop(1, ink(secondary, 0));
     context.fillStyle = halo; context.fillRect(-scale * .22, -scale * .22, scale * .44, scale * .44);
   } else {
-    // Translucent sheets drift at different depths through five long ink currents.
-    for (let index = 0; index < 5; index++) {
-      const y = height * (.14 + index * .18) + Math.sin(time * .14 + index) * 30;
-      const bend = Math.sin(time * .18 + index * .9) * scale * .13 + py * 40;
-      context.strokeStyle = ink(index % 2 ? secondary : primary, day ? .2 : .25);
-      context.lineWidth = index % 2 ? 1.4 : 2.2;
-      context.beginPath(); context.moveTo(-30, y);
-      context.bezierCurveTo(width * .3, y + bend, width * .65, y - bend + px * 25, width + 30, y + Math.sin(time * .12) * 30);
-      context.stroke();
-      context.strokeStyle = ink(primary, day ? .08 : .12); context.lineWidth = 7;
-      context.stroke();
-    }
-    for (let index = 0; index < 8; index++) {
+    // A few translucent sheets float above the simulated ink rather than competing with it.
+    for (let index = 0; index < 4; index++) {
       const phase = index * 2.399963;
       const x = width * (.08 + ((index * 37) % 89) / 100) + Math.sin(time * .09 + phase) * 25 + px * (index % 3 + 1) * 6;
       const y = height * (.1 + ((index * 29) % 79) / 100) + Math.cos(time * .12 + phase) * 26 - depth * (index % 3 + 1) * 5;
@@ -709,6 +723,414 @@ function drawLuxurySignature(context, state) {
       }
       context.restore();
     }
+  }
+  context.restore();
+}
+/* Stable 2D velocity/dye solver. No listeners or RAF; caller owns elapsed time. */
+function createInkFluid(options = {}) {
+  const fixedStep = 1 / 60;
+  const resolution = Math.max(48, Math.min(320, options.resolution || 320));
+  let width = 0, height = 0, screenWidth = 1, screenHeight = 1;
+  let u, v, nextU, nextV, dyeA, dyeB, nextA, nextB, curl, divergence, pressure, nextPressure;
+  let accumulator = 0, time = 0, tick = 0, disposed = false, randomState = 91373;
+  let canvas = null, context = null, pixels = null;
+  const random = () => { randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0; return randomState / 4294967296; };
+  const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+  function sample(field, x, y, w = width, h = height) {
+    x = clamp(x, .5, w - 1.5); y = clamp(y, .5, h - 1.5);
+    const left = Math.floor(x), top = Math.floor(y), fx = x - left, fy = y - top, i = left + top * w;
+    return (field[i] * (1 - fx) + field[i + 1] * fx) * (1 - fy) +
+      (field[i + w] * (1 - fx) + field[i + w + 1] * fx) * fy;
+  }
+  function edges() {
+    for (let x = 0; x < width; x++) {
+      const last = x + (height - 1) * width;
+      u[x] = v[x] = u[last] = v[last] = 0;
+    }
+    for (let y = 0; y < height; y++) {
+      const left = y * width, right = left + width - 1;
+      u[left] = v[left] = u[right] = v[right] = 0;
+    }
+  }
+  function splat(cx, cy, vx, vy, amount, radius = 2.5, mix = .5, swirl = 0) {
+    if (!width || !Number.isFinite(cx + cy + vx + vy + amount)) return;
+    const reach = Math.ceil(radius * 3), spread = 1 / (radius * radius * 2);
+    for (let y = Math.max(1, Math.floor(cy) - reach); y <= Math.min(height - 2, Math.ceil(cy) + reach); y++) {
+      for (let x = Math.max(1, Math.floor(cx) - reach); x <= Math.min(width - 2, Math.ceil(cx) + reach); x++) {
+        const dx = x - cx, dy = y - cy, weight = Math.exp(-(dx * dx + dy * dy) * spread), i = x + y * width;
+        u[i] = clamp(u[i] + (vx - dy * swirl) * weight, -100, 100);
+        v[i] = clamp(v[i] + (vy + dx * swirl) * weight, -100, 100);
+        // Density has a finite local capacity; holding a pointer cannot blow it up.
+        const remaining = Math.max(0, 2.2 - dyeA[i] - dyeB[i]);
+        const deposit = Math.min(remaining, Math.max(0, amount) * weight);
+        dyeA[i] += deposit * mix; dyeB[i] += deposit * (1 - mix);
+      }
+    }
+  }
+  function resize(w, h) {
+    if (disposed || !(w > 0 && h > 0)) return;
+    screenWidth = w; screenHeight = h;
+    const nextWidth = Math.max(28, Math.round(resolution * w / Math.max(w, h)));
+    const nextHeight = Math.max(28, Math.round(resolution * h / Math.max(w, h)));
+    if (nextWidth === width && nextHeight === height) return;
+    const old = width ? { width, height, u, v, dyeA, dyeB } : null;
+    width = nextWidth; height = nextHeight;
+    [u, v, nextU, nextV, dyeA, dyeB, nextA, nextB, curl, divergence, pressure, nextPressure] =
+      Array.from({ length: 12 }, () => new Float32Array(width * height));
+    pixels = null;
+    if (canvas) { canvas.width = width; canvas.height = height; }
+    if (old) {
+      for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+        const i = x + y * width, ox = x * (old.width - 1) / (width - 1), oy = y * (old.height - 1) / (height - 1);
+        u[i] = sample(old.u, ox, oy, old.width, old.height) * width / old.width;
+        v[i] = sample(old.v, ox, oy, old.width, old.height) * height / old.height;
+        dyeA[i] = sample(old.dyeA, ox, oy, old.width, old.height);
+        dyeB[i] = sample(old.dyeB, ox, oy, old.width, old.height);
+      }
+    } else if (options.seed !== false) {
+      const sources = [[.18, .32], [.72, .22], [.35, .72], [.84, .7]];
+      for (const [x, y] of sources) for (let layer = 0; layer < 7; layer++) {
+        const angle = random() * Math.PI * 2, radius = 1.8 + random() * 2;
+        splat(x * width + (random() - .5) * 7, y * height + (random() - .5) * 7,
+          Math.cos(angle) * 2, -2 + Math.sin(angle) * 2, .07 + random() * .06,
+          radius, random(), (random() - .5) * .65);
+      }
+    }
+  }
+  function inject(x, y, dx, dy, amount = .32) {
+    if (disposed || !width || !Number.isFinite(x + y + dx + dy + amount)) return;
+    if (x < 0 || y < 0 || x > screenWidth || y > screenHeight) return;
+    const gx = x / screenWidth * width, gy = y / screenHeight * height;
+    const speed = Math.hypot(dx, dy);
+    // A small local impulse leaves a thin filament; no global pointer displacement.
+    splat(gx, gy, clamp(dx * width / screenWidth * 12, -35, 35),
+      clamp(dy * height / screenHeight * 12, -35, 35), Math.min(.65, Math.max(0, amount)),
+      clamp(1.6 + speed * .012, 1.6, 2.8), .25 + random() * .5, (random() - .5) * .8);
+  }
+  function project() {
+    pressure.fill(0); nextPressure.fill(0); divergence.fill(0);
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const i = x + y * width;
+      divergence[i] = (u[i + 1] - u[i - 1] + v[i + width] - v[i - width]) * .5;
+    }
+    for (let pass = 0; pass < 14; pass++) {
+      for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+        const i = x + y * width;
+        nextPressure[i] = (pressure[i - 1] + pressure[i + 1] + pressure[i - width] + pressure[i + width] - divergence[i]) * .25;
+      }
+      [pressure, nextPressure] = [nextPressure, pressure];
+    }
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const i = x + y * width;
+      u[i] -= (pressure[i + 1] - pressure[i - 1]) * .5;
+      v[i] -= (pressure[i + width] - pressure[i - width]) * .5;
+    }
+    edges();
+  }
+  function step(pointer) {
+    time += fixedStep; tick++;
+    if (options.ambient !== false && tick % 17 === 0) {
+      // Sparse deterministic puffs, without sine ribbons or a screen-wide force.
+      const side = (Math.floor(tick / 17) % 4), sx = [.18, .72, .35, .84][side], sy = [.32, .22, .72, .7][side];
+      splat((sx + (random() - .5) * .025) * width, (sy + (random() - .5) * .025) * height,
+        (random() - .5) * .7, -.35 - random() * .25, .045, 2 + random(), random(), (random() - .5) * .4);
+    }
+    if (pointer?.down && Number.isFinite(pointer.x + pointer.y) && pointer.x >= 0 && pointer.y >= 0 && pointer.x <= screenWidth && pointer.y <= screenHeight) {
+      const strength = Number.isFinite(pointer.pressure) ? clamp(pointer.pressure, 0, 1) : 1;
+      splat(pointer.x / screenWidth * width, pointer.y / screenHeight * height,
+        (random() - .5) * .045, -.08, .014 * strength, 1.8, .4 + random() * .2, (random() - .5) * .06);
+    }
+    // Curl confinement recovers small rolling eddies lost to semi-Lagrangian sampling.
+    curl.fill(0);
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const i = x + y * width;
+      curl[i] = (v[i + 1] - v[i - 1] - u[i + width] + u[i - width]) * .5;
+    }
+    for (let y = 2; y < height - 2; y++) for (let x = 2; x < width - 2; x++) {
+      const i = x + y * width, dx = Math.abs(curl[i + 1]) - Math.abs(curl[i - 1]), dy = Math.abs(curl[i + width]) - Math.abs(curl[i - width]);
+      const inverse = 1 / (Math.hypot(dx, dy) + 1e-5), force = curl[i] * 3 * fixedStep;
+      u[i] += dy * inverse * force;
+      v[i] -= dx * inverse * force + (dyeA[i] + dyeB[i]) * .045 * fixedStep;
+    }
+    // Back-trace both velocity components through the same old velocity field.
+    const drag = Math.exp(-.32 * fixedStep);
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const i = x + y * width, bx = x - u[i] * fixedStep, by = y - v[i] * fixedStep;
+      nextU[i] = sample(u, bx, by) * drag; nextV[i] = sample(v, bx, by) * drag;
+    }
+    [u, nextU] = [nextU, u]; [v, nextV] = [nextV, v];
+    project();
+    const fade = Math.exp(-.22 * fixedStep);
+    for (let y = 1; y < height - 1; y++) for (let x = 1; x < width - 1; x++) {
+      const i = x + y * width, bx = x - u[i] * fixedStep, by = y - v[i] * fixedStep;
+      nextA[i] = sample(dyeA, bx, by) * fade; nextB[i] = sample(dyeB, bx, by) * fade;
+    }
+    [dyeA, nextA] = [nextA, dyeA]; [dyeB, nextB] = [nextB, dyeB];
+  }
+  function update(delta, pointer = {}) {
+    if (disposed || !width || !Number.isFinite(delta) || delta <= 0) return;
+    accumulator += Math.min(delta, fixedStep * 3);
+    let count = 0;
+    while (accumulator + 1e-9 >= fixedStep && count < 3) {
+      step(pointer); accumulator -= fixedStep; count++;
+    }
+    accumulator = Math.max(0, Math.min(accumulator, fixedStep));
+  }
+  function draw(target, w, h, colors) {
+    if (disposed || !width || !target || !colors?.primary || !colors?.secondary) return;
+    if (!canvas) {
+      canvas = typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(width, height) : document.createElement('canvas');
+      canvas.width = width; canvas.height = height; context = canvas.getContext('2d');
+      if (!context) { canvas = null; return; }
+    }
+    if (!pixels || pixels.width !== width || pixels.height !== height) pixels = context.createImageData(width, height);
+    const bytes = pixels.data, first = colors.primary, second = colors.secondary;
+    for (let i = 0; i < dyeA.length; i++) {
+      const density = dyeA[i] + dyeB[i], mix = density > 1e-7 ? dyeA[i] / density : .5;
+      const shade = colors.day ? 1 - Math.min(.28, density * .12) : 1;
+      bytes[i * 4] = (first[0] * mix + second[0] * (1 - mix)) * shade;
+      bytes[i * 4 + 1] = (first[1] * mix + second[1] * (1 - mix)) * shade;
+      bytes[i * 4 + 2] = (first[2] * mix + second[2] * (1 - mix)) * shade;
+      bytes[i * 4 + 3] = (1 - Math.exp(-density * 1.35)) * (colors.day ? 205 : 184);
+    }
+    context.putImageData(pixels, 0, 0);
+    target.save(); target.globalAlpha = 1; target.globalCompositeOperation = 'source-over';
+    target.imageSmoothingEnabled = true; target.imageSmoothingQuality = 'high';
+    target.filter = `blur(${Math.max(.25, Math.min(1.2, w / width * .08)).toFixed(2)}px)`;
+    target.drawImage(canvas, 0, 0, w, h); target.restore();
+  }
+  return {
+    resize, inject, update, draw,
+    snapshot() { return { width, height, time, u: u?.slice(), v: v?.slice(), dyeA: dyeA?.slice(), dyeB: dyeB?.slice() }; },
+    destroy() {
+      if (disposed) return; disposed = true;
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+      canvas = context = pixels = null;
+      u = v = nextU = nextV = dyeA = dyeB = nextA = nextB = curl = divergence = pressure = nextPressure = null;
+      width = height = 0; accumulator = 0;
+    }
+  };
+}
+/* Pure, viewport-space light renderer. Velocity is CSS pixels/second; time is seconds. */
+function drawLightField(context, state) {
+  const { width, height, primary, secondary } = state;
+  if (!(width > 0 && height > 0) || !Array.isArray(primary) || !Array.isArray(secondary)) return;
+  const text = Array.isArray(state.text) ? state.text : primary;
+  const time = Number.isFinite(state.time) ? state.time : 0;
+  const pointer = state.pointer || {};
+  const px = Number.isFinite(pointer.x) ? pointer.x : width / 2;
+  const py = Number.isFinite(pointer.y) ? pointer.y : height / 2;
+  const vx = Number.isFinite(pointer.velocityX) ? pointer.velocityX : 0;
+  const vy = Number.isFinite(pointer.velocityY) ? pointer.velocityY : 0;
+  const speed = Math.hypot(vx, vy);
+  const energy = 1 - Math.exp(-Math.min(speed, 4500) / 650);
+  const heading = speed > 2 ? Math.atan2(vy, vx) : time * .055;
+  const pressure = Math.max(0, Math.min(1, Number(pointer.pressure) || 0));
+  const paper = state.style === 'paper', deep = state.style === 'deep';
+  const day = Boolean(state.day);
+  const strength = paper ? .34 : 1;
+  const scale = Math.min(width, height);
+  const rgba = (rgb, a) => `rgba(${rgb.map(value => Math.max(0, Math.min(255, Math.round(value)))).join(',')},${Math.max(0, Math.min(1, a))})`;
+  const mix = (a, b, amount) => a.map((value, i) => value * (1 - amount) + b[i] * amount);
+  const glint = mix(primary, text, day ? .08 : .62);
+  // Small spectral accents inherit hue/saturation from the site's two seed colors.
+  const hueShift = (rgb, degrees) => {
+    const values = rgb.map(value => value / 255), maximum = Math.max(...values), minimum = Math.min(...values);
+    const delta = maximum - minimum, light = (maximum + minimum) / 2;
+    if (delta < .00001) return rgb.slice();
+    let hue = maximum === values[0] ? (values[1] - values[2]) / delta + (values[1] < values[2] ? 6 : 0)
+      : maximum === values[1] ? (values[2] - values[0]) / delta + 2 : (values[0] - values[1]) / delta + 4;
+    hue = ((hue / 6 + degrees / 360) % 1 + 1) % 1;
+    const saturation = delta / (1 - Math.abs(2 * light - 1));
+    const c = (1 - Math.abs(2 * light - 1)) * saturation, sector = hue * 6, x = c * (1 - Math.abs(sector % 2 - 1));
+    const channels = sector < 1 ? [c, x, 0] : sector < 2 ? [x, c, 0] : sector < 3 ? [0, c, x]
+      : sector < 4 ? [0, x, c] : sector < 5 ? [x, 0, c] : [c, 0, x];
+    return channels.map(value => (value + light - c / 2) * 255);
+  };
+  const spectrum = Array.from({ length: 5 }, (_, index) => hueShift(mix(primary, secondary, index / 4),
+    (index - 2) * 33 + Math.sin(time * .35) * 9));
+  function refract(x, y, radius, magnification, alpha) {
+    const source = context.canvas;
+    if (!source || !(source.width > 0 && source.height > 0) || typeof context.drawImage !== 'function') return;
+    const left = Math.max(0, x - radius / magnification), top = Math.max(0, y - radius / magnification);
+    const right = Math.min(width, x + radius / magnification), bottom = Math.min(height, y + radius / magnification);
+    if (right <= left || bottom <= top) return;
+    const pixelX = source.width / width, pixelY = source.height / height;
+    context.save(); context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.clip();
+    context.globalAlpha = alpha;
+    // drawImage snapshots the sampled source before the same-canvas draw operation.
+    context.drawImage(source, left * pixelX, top * pixelY, (right - left) * pixelX, (bottom - top) * pixelY,
+      x + (left - x) * magnification, y + (top - y) * magnification,
+      (right - left) * magnification, (bottom - top) * magnification);
+    context.restore();
+  }
+  const cx = width / 2, cy = height / 2;
+  const drift = Math.sin((state.scrollDepth || 0) * .0006) * 24;
+  const project = point => {
+    const perspective = 650 / Math.max(300, 650 + point.z);
+    return { x: cx + point.x * perspective, y: cy + point.y * perspective, scale: perspective };
+  };
+  const path = points => {
+    context.beginPath();
+    points.forEach((point, i) => i ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
+    context.closePath();
+  };
+  context.save();
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
+  context.lineJoin = 'round';
+
+  // Transparent solids are projected from rotating 3D vertices, not flat sprites.
+  const solids = [];
+  const count = paper ? 5 : deep ? 10 : 12;
+  for (let index = 0; index < count; index++) {
+    const phase = index * 2.399963;
+    const z = 50 + (index % 4) * 90 + Math.sin(time * .16 + phase) * 65;
+    const worldX = Math.sin(phase + .8) * width * .64 + Math.sin(time * .07 + phase) * 24 + (px - cx) * .035;
+    const worldY = Math.cos(phase * .83) * height * .6 + Math.cos(time * .06 + phase) * 20 + drift * (index % 3 + 1) * .3;
+    solids.push({ index, phase, z, worldX, worldY });
+  }
+  solids.sort((a, b) => b.z - a.z);
+  for (const item of solids) {
+    const { index, phase, z, worldX, worldY } = item;
+    const center = project({ x: worldX, y: worldY, z });
+    const near = Math.max(0, 1 - Math.hypot(center.x - px, center.y - py) / 300);
+    const radius = Math.max(26, Math.min(76, scale * (.045 + (index % 3) * .017)));
+    const tint = index % 2 ? secondary : primary;
+    if (deep) {
+      const r = radius * center.scale;
+      refract(center.x, center.y, r * .92, 1.1 + near * .12 + energy * .04, day ? .48 : .6);
+      const glass = context.createRadialGradient(center.x - r * .28, center.y - r * .35, r * .04, center.x, center.y, r);
+      glass.addColorStop(0, rgba(glint, .12 + near * .12));
+      glass.addColorStop(.2, rgba(tint, .04));
+      glass.addColorStop(.75, rgba(secondary, .015));
+      glass.addColorStop(.94, rgba(tint, .08 + near * .07));
+      glass.addColorStop(1, rgba(tint, 0));
+      context.fillStyle = glass;
+      context.beginPath(); context.arc(center.x, center.y, r, 0, Math.PI * 2); context.fill();
+      const rim = context.createLinearGradient(center.x - r, center.y - r, center.x + r, center.y + r);
+      rim.addColorStop(0, rgba(glint, .46 + near * .35)); rim.addColorStop(.35, rgba(tint, .025));
+      rim.addColorStop(.7, rgba(secondary, .18)); rim.addColorStop(1, rgba(glint, .4));
+      context.strokeStyle = rim; context.lineWidth = .9;
+      context.beginPath(); context.arc(center.x, center.y, r * .94, 0, Math.PI * 2); context.stroke();
+      for (let band = 0; band < 3; band++) {
+        const angle = phase + time * .16 + band * .23;
+        context.strokeStyle = rgba(spectrum[(index + band) % spectrum.length], .19 + near * .65);
+        context.lineWidth = .7 + near * (1.7 + energy * .8);
+        context.beginPath(); context.arc(center.x, center.y, r * (.91 - near * .02 + band * (.025 + near * .027)), angle, angle + Math.PI * .8); context.stroke();
+      }
+      context.save(); context.translate(center.x, center.y); context.rotate(phase + time * .035);
+      context.strokeStyle = rgba(tint, .16 + near * .12); context.lineWidth = .6;
+      context.beginPath(); context.ellipse(0, 0, r * .91, r * .31, 0, -.8, Math.PI * 1.45); context.stroke();
+      context.restore();
+    } else {
+      const yaw = phase + time * (paper ? .045 : .085) + (px / width - .5) * .14;
+      const pitch = Math.sin(phase + time * .065) * .5 + (py / height - .5) * .1;
+      const vertices = paper
+        ? [[-radius * .8, -radius, 0], [radius * .7, -radius * .9, radius * .12], [radius * .8, radius, 0], [-radius * .7, radius * .9, -radius * .12]]
+        : [[0, -radius * 1.35, 0], [0, radius * 1.35, 0], [-radius * .55, 0, 0], [radius * .55, 0, 0], [0, 0, -radius * .55], [0, 0, radius * .55]];
+      const rotated = vertices.map(([x, y, zz]) => {
+        const xx = x * Math.cos(yaw) + zz * Math.sin(yaw);
+        const za = -x * Math.sin(yaw) + zz * Math.cos(yaw);
+        return { x: worldX + xx, y: worldY + y * Math.cos(pitch) - za * Math.sin(pitch), z: z + y * Math.sin(pitch) + za * Math.cos(pitch) };
+      });
+      const faces = paper ? [[0, 1, 2], [0, 2, 3]] : [[0, 2, 4], [0, 4, 3], [0, 3, 5], [0, 5, 2], [1, 4, 2], [1, 3, 4], [1, 5, 3], [1, 2, 5]];
+      faces.sort((a, b) => b.reduce((sum, i) => sum + rotated[i].z, 0) - a.reduce((sum, i) => sum + rotated[i].z, 0));
+      faces.forEach((face, faceIndex) => {
+        const points = face.map(i => project(rotated[i]));
+        const faceLight = (.035 + (faceIndex % 3) * .025 + near * .07) * (paper ? .7 : 1);
+        const sheen = context.createLinearGradient(points[0].x, points[0].y, points[2].x, points[2].y);
+        sheen.addColorStop(0, rgba(glint, faceLight * 1.6));
+        sheen.addColorStop(.24, rgba(spectrum[(faceIndex + index) % 5], faceLight * .8)); sheen.addColorStop(.45, rgba(tint, faceLight));
+        sheen.addColorStop(1, rgba(secondary, faceLight * .15));
+        context.fillStyle = sheen; context.strokeStyle = rgba(tint, (paper ? .11 : .22) + near * .21);
+        context.lineWidth = paper ? .65 : .85; path(points); context.fill(); context.stroke();
+      });
+      const edgeA = project(rotated[0]), edgeB = project(rotated[paper ? 1 : 5]);
+      context.strokeStyle = rgba(glint, (paper ? .2 : .55) + near * .2); context.lineWidth = 1.1;
+      context.beginPath(); context.moveTo(edgeA.x, edgeA.y); context.lineTo(edgeB.x, edgeB.y); context.stroke();
+      const edgeLength = Math.max(1, Math.hypot(edgeB.x - edgeA.x, edgeB.y - edgeA.y));
+      const nx = -(edgeB.y - edgeA.y) / edgeLength, ny = (edgeB.x - edgeA.x) / edgeLength;
+      for (let band = -1; band <= 1; band++) {
+        const offset = band * (paper ? .7 + near * .7 : 1.4 + near * 2.8);
+        context.strokeStyle = rgba(spectrum[(index + band + 5) % 5], (paper ? .1 + near * .2 : .25 + near * .62));
+        context.lineWidth = .55 + near * (paper ? .45 : 1.4 + energy * .5);
+        context.beginPath(); context.moveTo(edgeA.x + nx * offset, edgeA.y + ny * offset);
+        context.lineTo(edgeB.x + nx * offset, edgeB.y + ny * offset); context.stroke();
+      }
+    }
+  }
+
+  if (paper) refract(px, py, 26 + energy * 20, 1.035 + energy * .065, .42);
+
+  // Cursor motion creates a local, direction-aware light volume; it never pulls a background band.
+  const reach = Math.min(scale * .48, 160 + energy * 250);
+  context.save(); context.translate(px, py); context.rotate(heading + Math.PI);
+  for (let beam = 0; beam < (paper ? 2 : 4); beam++) {
+    const spread = (.06 + beam * .045) * (1 + pressure * .25);
+    const length = reach * (.7 + beam * .13);
+    const volume = context.createLinearGradient(0, 0, length, 0);
+    volume.addColorStop(0, rgba(beam % 2 ? glint : primary, (.045 + energy * .16) * strength));
+    volume.addColorStop(.25, rgba(beam % 2 ? secondary : primary, (.035 + energy * .1) * strength));
+    volume.addColorStop(1, rgba(primary, 0));
+    context.fillStyle = volume;
+    context.beginPath(); context.moveTo(0, 0); context.lineTo(length, -length * spread);
+    context.quadraticCurveTo(length * .9, 0, length, length * spread); context.closePath(); context.fill();
+  }
+  context.restore();
+
+  // A layered optical flare mixes bright pin light, broad weak bloom and ghost lenses.
+  const haloRadius = (paper ? 42 : 66) + energy * (paper ? 25 : 66);
+  const halo = context.createRadialGradient(px, py, 0, px, py, haloRadius);
+  halo.addColorStop(0, rgba(glint, (.1 + energy * .65) * strength));
+  halo.addColorStop(.11, rgba(primary, (.07 + energy * .38) * strength));
+  halo.addColorStop(.42, rgba(secondary, (.02 + energy * .08) * strength));
+  halo.addColorStop(1, rgba(primary, 0));
+  context.fillStyle = halo; context.fillRect(px - haloRadius, py - haloRadius, haloRadius * 2, haloRadius * 2);
+  const flareAxis = Math.atan2(cy - py, cx - px);
+  for (let ghost = 1; ghost <= (paper ? 2 : 5); ghost++) {
+    const distance = ghost * (17 + energy * 12);
+    const gx = px + Math.cos(flareAxis) * distance, gy = py + Math.sin(flareAxis) * distance;
+    const r = (4 + ghost * 3) * (paper ? .65 : 1);
+    const lens = context.createRadialGradient(gx, gy, r * .3, gx, gy, r);
+    lens.addColorStop(0, rgba(primary, 0)); lens.addColorStop(.74, rgba(ghost % 2 ? primary : secondary, (.025 + energy * .075) * strength));
+    lens.addColorStop(1, rgba(secondary, 0));
+    context.fillStyle = lens; context.beginPath(); context.arc(gx, gy, r, 0, Math.PI * 2); context.fill();
+    context.strokeStyle = rgba(spectrum[(ghost + 1) % 5], (.035 + energy * .1) * strength);
+    context.lineWidth = .65; context.beginPath(); context.arc(gx, gy, r * .85, time * .2 + ghost, time * .2 + ghost + Math.PI * 1.3); context.stroke();
+  }
+  if (!paper) {
+    context.save(); context.translate(px, py); context.rotate(deep ? Math.PI / 4 : 0);
+    const rayLength = 8 + energy * 34;
+    for (let axis = 0; axis < 2; axis++) {
+      const ray = context.createLinearGradient(-rayLength, 0, rayLength, 0);
+      ray.addColorStop(0, rgba(primary, 0)); ray.addColorStop(.5, rgba(glint, .28 + energy * .55)); ray.addColorStop(1, rgba(secondary, 0));
+      context.strokeStyle = ray; context.lineWidth = axis ? .7 : 1.1;
+      context.beginPath(); context.moveTo(-rayLength, 0); context.lineTo(rayLength, 0); context.stroke(); context.rotate(Math.PI / 2);
+    }
+    context.restore();
+  }
+
+  // Directional firefly/ember glints are analytic, so no history buffer or extra lifecycle exists.
+  if (energy > .02) {
+    context.save(); context.translate(px, py); context.rotate(heading + Math.PI);
+    const embers = paper ? 5 : 18;
+    for (let index = 0; index < embers; index++) {
+      const phase = index * 2.399963;
+      const progress = ((time * (.28 + index % 3 * .06) + index / embers) % 1);
+      const x = progress * reach * .8;
+      const y = Math.sin(phase + progress * 7) * (4 + progress * 27) * energy;
+      const fade = Math.sin(progress * Math.PI) * energy * strength;
+      context.strokeStyle = rgba(index % 3 ? spectrum[index % 5] : glint, fade * .7);
+      context.lineWidth = index % 4 === 0 ? 1.4 : .65;
+      context.beginPath(); context.moveTo(x, y); context.lineTo(x - (3 + energy * 9) * (1 - progress), y - Math.cos(phase) * 2); context.stroke();
+      if (!paper && index % 4 === 0) {
+        const spark = context.createRadialGradient(x, y, 0, x, y, 7);
+        spark.addColorStop(0, rgba(glint, fade * .45)); spark.addColorStop(.25, rgba(secondary, fade * .16)); spark.addColorStop(1, rgba(primary, 0));
+        context.fillStyle = spark; context.fillRect(x - 7, y - 7, 14, 14);
+      }
+    }
+    context.restore();
   }
   context.restore();
 }

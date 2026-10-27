@@ -147,6 +147,8 @@ const flush = () => new Promise(resolve => setImmediate(resolve));
   });
   console.log(`APPEARANCE PASS — ${checks} behavior checks`);
   await testImmersive();
+  testInkFluid();
+  testLightField();
 })().catch(error => { console.error(error); process.exitCode = 1; });
 
 async function testImmersive() {
@@ -164,7 +166,11 @@ async function testImmersive() {
   const children = [];
   document.body = { append: node => children.push(node) };
   const gradient = { addColorStop() {} };
-  const context = new Proxy({ createLinearGradient: () => gradient, createRadialGradient: () => gradient }, { get: (object, key) => object[key] || (() => {}) });
+  let activePath = []; const filledPaths = [];
+  const context = new Proxy({ createLinearGradient: () => gradient, createRadialGradient: () => gradient,
+    beginPath() { activePath = []; }, moveTo(x, y) { activePath.push([x, y]); }, lineTo(x, y) { activePath.push([x, y]); },
+    fill() { if (activePath.length > 10) filledPaths.push(activePath.slice()); },
+    createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }) }, { get: (object, key) => object[key] || (() => {}) });
   document.createElement = () => {
     const canvas = new Element(); canvas.getContext = () => context;
     canvas.remove = () => { const index = children.indexOf(canvas); if (index >= 0) children.splice(index, 1); };
@@ -190,10 +196,15 @@ async function testImmersive() {
     assert.equal(frames.size, 1, 'luxury starts full-page background without a hero'); assert.equal(children.length, 1);
     const [globalID, globalDraw] = frames.entries().next().value; frames.delete(globalID); globalDraw(100);
     assert.equal(frames.size, 1, 'one full-page render loop after a frame');
+    const ribbonBefore = filledPaths[0]; filledPaths.length = 0;
+    window.dispatch('pointerdown', { clientX: 640, clientY: 400, isPrimary: true });
     assert.notEqual(heading.properties['--text-x'], '0.000px', 'plain text responds to nearby pointer');
     const firstReads = geometryReads;
     const [nextID, nextDraw] = frames.entries().next().value; frames.delete(nextID); nextDraw(116);
     assert.equal(geometryReads, firstReads, 'text layout is cached between ordinary frames');
+    const ribbonAfter = filledPaths[0];
+    assert.ok(Math.max(...ribbonAfter.map((point, index) => Math.abs(point[1] - ribbonBefore[index][1]))) < 5, 'holding pointer cannot snap the whole light ribbon');
+    window.dispatch('pointerup');
     selection = { isCollapsed: false, rangeCount: 1 }; document.dispatch('selectionchange');
     assert.equal(document.documentElement.dataset.textFrozen, 'true');
     const frozenX = heading.properties['--text-x'];
@@ -234,4 +245,74 @@ async function testImmersive() {
   } finally {
     for (const key of changed) { if (previous[key] === undefined) delete global[key]; else global[key] = previous[key]; }
   }
+}
+
+
+function testInkFluid() {
+  const moduleSource = fs.readFileSync(path.join(__dirname, '../assets/js/immersive.js'), 'utf8');
+  const createInkFluid = vm.runInNewContext(moduleSource.replace('export function createImmersive', 'function createImmersive') + ';createInkFluid;');
+  const create = () => { const ink = createInkFluid({ ambient: false, seed: false, resolution: 64 }); ink.resize(800, 500); return ink; };
+  const mass = state => state.dyeA.reduce((a, b) => a + b, 0) + state.dyeB.reduce((a, b) => a + b, 0);
+  const centerX = state => {
+    let weighted = 0; for (let i = 0; i < state.dyeA.length; i++) weighted += (i % state.width) * (state.dyeA[i] + state.dyeB[i]);
+    return weighted / mass(state);
+  };
+  const flow = create(); flow.inject(400, 250, 22, 0, .6);
+  const startX = centerX(flow.snapshot());
+  for (let i = 0; i < 60; i++) flow.update(1 / 60);
+  assert.ok(centerX(flow.snapshot()) > startX + .03, 'ink advects in the direction of local velocity');
+  const fade = create(); fade.inject(400, 250, 0, 0, .6); const originalMass = mass(fade.snapshot());
+  for (let i = 0; i < 600; i++) fade.update(1 / 60);
+  assert.ok(mass(fade.snapshot()) < originalMass * .2, 'released ink disperses instead of remaining a solid blob');
+  const sixty = create(), high = create();
+  for (const ink of [sixty, high]) ink.inject(360, 280, 18, -5, .5);
+  for (let i = 0; i < 120; i++) sixty.update(1 / 60);
+  for (let i = 0; i < 288; i++) high.update(1 / 144);
+  const a = sixty.snapshot(), b = high.snapshot(); assert.equal(a.time, b.time);
+  for (const key of ['u', 'v', 'dyeA', 'dyeB']) assert.deepEqual(Array.from(a[key]), Array.from(b[key]), '60/144Hz fixed-step fields match');
+  const ink = createInkFluid(); ink.resize(1280, 800);
+  assert.ok(mass(ink.snapshot()) > 0, 'initial subtle plumes are visible before input');
+  for (let i = 0; i < 180; i++) {
+    if (i % 5 === 0) ink.inject(100 + (i * 71) % 1080, 80 + (i * 43) % 640, 800, -600, 99);
+    ink.update(1 / 60, { x: 640, y: 400, down: true });
+  }
+  const held = ink.snapshot();
+  for (const key of ['u', 'v', 'dyeA', 'dyeB']) assert.ok(held[key].every(Number.isFinite));
+  for (let i = 0; i < held.dyeA.length; i++) assert.ok(held.dyeA[i] + held.dyeB[i] <= 2.20001, 'held injection remains bounded');
+  ink.resize(800, 1280); assert.ok(mass(ink.snapshot()) > 0, 'resize retains ink');
+  ink.destroy(); ink.destroy(); ink.update(1 / 60);
+  assert.equal(ink.snapshot().width, 0); assert.equal(ink.snapshot().u, undefined);
+  for (const sim of [flow, fade, sixty, high]) sim.destroy();
+  console.log('INK PASS — advection, fade, initial plumes, 60/144Hz consistency, bounded hold, resize, cleanup');
+}
+
+
+function testLightField() {
+  const moduleSource = fs.readFileSync(path.join(__dirname, '../assets/js/immersive.js'), 'utf8');
+  const drawLightField = vm.runInNewContext(moduleSource.replace('export function createImmersive', 'function createImmersive') + ';drawLightField;');
+  function render(style, day, primary, secondary) {
+    const colors = [], samples = []; let stack = 0;
+    const gradient = () => ({ addColorStop: (offset, value) => { assert.ok(Number.isFinite(offset)); colors.push(value); } });
+    const context = new Proxy({ canvas: { width: 2560, height: 1600 }, save() { stack++; }, restore() { stack--; assert.ok(stack >= 0); },
+      createLinearGradient: gradient, createRadialGradient: gradient,
+      drawImage(source, x, y, width, height) {
+        assert.ok(x >= 0 && y >= 0 && x + width <= source.width + 1e-6 && y + height <= source.height + 1e-6);
+        samples.push([x, y, width, height]);
+      } }, {
+      get: (target, key) => target[key] || ((...args) => { args.filter(value => typeof value === 'number').forEach(value => assert.ok(Number.isFinite(value))); }),
+      set: (target, key, value) => { target[key] = value; if (typeof value === 'string' && value.startsWith('rgba')) colors.push(value); return true; }
+    });
+    drawLightField(context, { width: 1280, height: 800, time: 2.4, style, day, primary, secondary, text: [240, 246, 250],
+      pointer: { x: 220, y: 540, velocityX: 760, velocityY: -210, pressure: .3 }, scrollDepth: 500 });
+    assert.equal(stack, 0); assert.ok(colors.length > 20);
+    if (style === 'deep' || style === 'paper') assert.ok(samples.length > 0, 'lenses sample and magnify actual canvas pixels');
+    return colors;
+  }
+  for (const style of ['grid', 'deep', 'paper']) for (const day of [true, false]) {
+    const before = render(style, day, [130, 237, 250], [164, 198, 255]);
+    const after = render(style, day, [245, 105, 71], [187, 120, 223]);
+    assert.notDeepEqual(before, after, 'seed color edits recolor derived spectral light');
+    assert.ok(after.every(color => !color.includes('NaN')));
+  }
+  console.log('LIGHT PASS — six style/mode renderers, finite geometry, DPR refraction bounds, seed-derived spectral color');
 }
