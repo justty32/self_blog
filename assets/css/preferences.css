@@ -7,51 +7,60 @@
 }
 @media (max-width: 48rem) {
   .site-shell { width: min(calc(100% - 2.5rem), var(--content)); }
-  .nav { flex-wrap: wrap; gap: .5rem 1rem; padding-block: .8rem; }
+  .nav { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .65rem .6rem; padding-block: .8rem; }
   .brand { margin-right: auto; }
-  .appearance-panel { margin-left: auto; order: 1; }
-  .nav-links { order: 2; flex-basis: 100%; justify-content: space-between; gap: .3rem .8rem; margin-left: 0; }
-  .nav-links a { font-size: .78rem; padding-block: .2rem; }
-  .appearance-popover { top: calc(100% + 3rem); max-height: calc(100dvh - 10rem); }
+  .nav-controls { grid-column: 2; gap: .4rem; }
+  .appearance-panel { margin-left: 0; }
+  .nav-links { grid-column: 1 / -1; grid-row: 2; order: 2; justify-content: space-between; gap: .3rem .6rem; margin-left: 0; }
+  .nav-links a { font-size: 1rem; padding-block: .2rem; }
+  .appearance-popover { position: fixed; left: 1rem; right: 1rem; top: 7rem; width: auto; max-height: calc(100dvh - 8rem); }
   main { padding-top: 2.5rem; }
   .hero { grid-template-columns: 1fr; gap: .5rem; min-height: 0; padding-block: .5rem 2rem; }
   .hero-content { gap: 1.3rem; }
   .hero-title { font-size: clamp(2.6rem, 11vw, 4.5rem); }
-  .hero-copy { max-width: 34rem; font-size: 1rem; }
+  .nav-controls .mode-toggle, .nav-controls .appearance-trigger { padding-inline: .5rem; font-size: 1rem; }
+  .nav-controls .appearance-trigger > span { display: none; }
+  .nav .brand { gap: .45rem; font-size: 1.1rem; }
+  .nav .brand-mark { width: 1.5rem; height: 1.5rem; font-size: .9375rem; }
+  .hero-copy { max-width: 34rem; font-size: 1.25rem; }
   .hero-visual { width: min(100%, 25rem); aspect-ratio: 1.4; justify-self: center; margin-block: -.4rem -.8rem; }
   .reactor { inset: 0 18%; }
   .reactor-caption { top: 7%; }
   .reactor-caption.bottom, .reactor-caption:last-child { bottom: 7%; }
   .signal-strip { margin-bottom: 3rem; }
-  .signal-item { flex-direction: column; align-items: flex-start; gap: .4rem; padding: 1.1rem .8rem; }
+  .signal-item { min-width: 0; flex-direction: column; align-items: flex-start; gap: .4rem; padding: 1.1rem .8rem; }
   .signal-value { font-size: 1.25rem; }
-  .signal-label { font-size: .68rem; letter-spacing: 0; }
-  .section-heading { gap: .6rem; }
+  .signal-label { font-size: .9375rem; letter-spacing: 0; line-height: 1.6; }
+  .section-heading { gap: .6rem; flex-wrap: wrap; }
   .section-heading h2 { font-size: 1.3rem; gap: .5rem; }
-  .section-heading > a { font-size: .75rem; }
+  .section-heading > a { font-size: .9375rem; }
   .post-card { min-height: 0; padding: 1.5rem; }
   .post-card h2, .post-card h3 { font-size: 1.25rem; }
   .article-layout { display: flex; flex-direction: column; gap: 2rem; }
   .article-layout > article { width: 100%; }
-  .article-toc { position: static; order: -1; width: 100%; max-height: 13rem; padding-block: .2rem; font-size: .8rem; }
+  .article-toc { position: static; order: -1; width: 100%; max-height: 13rem; padding-block: .2rem; font-size: .9375rem; }
   .article-toc ul { display: flex; flex-wrap: wrap; column-gap: 1.1rem; }
   .article-toc ul ul { display: none; }
   .article-toc li { margin-block: .2rem; }
   .toc-title { margin-bottom: .45rem; }
   .page-header { margin-bottom: 2rem; }
   .page-header h1 { font-size: clamp(2rem, 8vw, 3.4rem); }
-  .prose { font-size: 1rem; }
+  .prose { font-size: var(--body-size); }
   .prose pre { margin-inline: -.3rem; padding: 1rem; }
   .site-footer { margin-top: 1.5rem; }
   :root[data-style="paper"] .hero-visual { max-height: 12rem; }
 }
 @media (max-width: 23rem) {
   .site-shell { width: calc(100% - 2rem); }
-  .hero-actions { width: 100%; }
-  .button { padding-inline: .9rem; gap: .8rem; }
+  .hero-actions { width: 100%; gap: .6rem; }
+  .nav .brand-mark { display: none; }
+  .color-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .signal-item { padding-block: 1rem; }
+  .signal-value { font-size: 1.1rem; }
+  .button { padding-inline: .75rem; gap: .55rem; }
   .signal-item { padding-inline: .55rem; }
   .archive-list li { grid-template-columns: 1fr; gap: .2rem; }
-  .brand { font-size: 1rem; }
+  .brand { font-size: 1.1rem; }
   .brand-mark { width: 1.5rem; height: 1.5rem; }
 }
 :root[data-motion="reduced"] { scroll-behavior: auto; }

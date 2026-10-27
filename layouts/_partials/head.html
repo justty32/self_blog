@@ -15,11 +15,11 @@
 {{ end }}
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
 {{- with partialCached "styles.html" . }}
-<link rel="stylesheet" href="{{ .RelPermalink }}">
+<link rel="stylesheet" href="{{ printf "%s?v=%.12s" .RelPermalink (sha256 .Content) }}">
 {{- end }}
 {{- $preferences := resources.Get "js/preferences.js" | minify -}}
 {{- $immersive := resources.Get "js/immersive.js" | minify -}}
-<script defer src="{{ $preferences.RelPermalink }}" data-immersive-src="{{ $immersive.RelPermalink }}"></script>
+<script defer src="{{ printf "%s?v=%.12s" $preferences.RelPermalink (sha256 $preferences.Content) }}" data-immersive-src="{{ printf "%s?v=%.12s" $immersive.RelPermalink (sha256 $immersive.Content) }}"></script>
 <meta property="og:type" content="{{ if and .IsPage (eq .Section "posts") }}article{{ else }}website{{ end }}">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $description }}">

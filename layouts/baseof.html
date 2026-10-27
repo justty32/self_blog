@@ -1,7 +1,9 @@
 <!doctype html>
 {{- $defaultStyle := hugo.Data.appearance.default_style | default "grid" -}}
 {{- if not (in (slice "grid" "paper" "deep") $defaultStyle) -}}{{- $defaultStyle = "grid" -}}{{- end -}}
-<html lang="zh-Hant-TW" data-style="{{ $defaultStyle }}" data-motion="full" data-immersive="off">
+{{- $defaultMode := hugo.Data.appearance.default_mode | default "night" -}}
+{{- if not (in (slice "day" "night") $defaultMode) -}}{{- $defaultMode = "night" -}}{{- end -}}
+<html lang="zh-Hant-TW" data-style="{{ $defaultStyle }}" data-mode="{{ $defaultMode }}" data-luxury="off" data-motion="full" data-immersive="off">
   <head>
     {{ partial "head.html" . }}
   </head>

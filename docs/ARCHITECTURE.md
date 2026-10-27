@@ -31,33 +31,57 @@ CSS 按職責拆在 `assets/css/`：
 | `components.css` | 卡片、標籤等元件 |
 | `prose.css` | 文章、程式碼與圖片 |
 | `scene.css` | 首頁精密光環、光網與裝飾動畫 |
-| `themes.css` | 光網、閱讀與深空三種美術風格 |
+| `themes.css` | 光網、閱讀與深空三種美術風格，以及獨立日／夜模式 |
 | `preferences.css` | 響應式、減少動畫與使用者偏好 |
 
 `layouts/_partials/styles.html` 明確指定合併順序，並將 `data/appearance.toml` 的預設色
 產生為各風格的 CSS 變數。Hugo 將它們合成同一個 `/css/site.css`，維持單一 CSS request；
-不使用瀏覽器端 CSS import，也不需要額外編譯工具。
+不使用瀏覽器端 CSS import，也不需要額外編譯工具。正文、次要資訊與控制項以較大字級和
+清楚對比呈現；光線、hover 與元件動畫維持裝飾層次，不改變內容的閱讀順序。
 
 ## 配色與互動
 
 `data/appearance.toml` 是預設配色的唯一來源；`styles.grid`、`styles.paper`、`styles.deep`
-各自定義 `bg`、`surface`、`text`、`muted`、`primary`、`secondary` 六個完整十六進位色碼。
-頂層 `default_style` 決定未保存個人偏好時的預設風格，停用 JavaScript 時也適用。
+各自包含 `day` 與 `night`，每組定義 `bg`、`surface`、`text`、`muted`、`primary`、
+`secondary` 六個完整十六進位色碼。頂層 `default_style` 與 `default_mode` 決定未保存
+個人偏好時的預設風格及日／夜模式，停用 JavaScript 時也適用。風格與日／夜模式獨立切換。
 CSS 的 `--seed-*` 變數由這些值生成，邊框、光暈、背景層次與互動粒子由基準色衍生。
 作者如何改預設色、訪客設定的差異見 [作者指南](AUTHORING.md#調整網站外觀)。
 
 `layouts/_partials/appearance.html` 提供外觀面板。`assets/js/preferences.js` 經 Hugo
-壓縮為 `/js/preferences.min.js` 並以 `defer` 載入，管理風格、六色與動態偏好，
+壓縮為 `/js/preferences.min.js` 並以 `defer` 載入，管理風格、日／夜模式、六色與動態偏好，
 並提供程式碼複製、目錄目前章節標示與文章閱讀進度等輕量工具。
-偏好儲存在 `localStorage` 的 `self-blog-appearance-v1`；每種風格分別保留自訂色，
-重設只清除目前風格的自訂色。儲存不可用時仍能在當頁調整，停用 JavaScript 時保留
-預設風格與可用的內容、導覽。
+偏好儲存在 `localStorage` 的 `self-blog-appearance-v2`，包含 `style`、`mode`、
+`motion` 與 `colors`；自訂色依風格、日／夜模式分開，例如 `colors.grid.night.primary`。
+重設只清除目前風格及模式的自訂色。沒有 v2 設定時會讀取 v1，將舊閱讀風格與自訂色移到
+`paper.day`，其餘風格移到各自的 `night`，保留原 v1 key。儲存不可用時仍能在當頁調整，
+停用 JavaScript 時保留預設風格與可用的內容、導覽。
 
-`assets/js/immersive.js` 壓縮為 `/js/immersive.min.js`。只有按下沉浸模式按鈕後才
-動態載入；不預先下載、不跨頁自動啟用。效果包含三層星場、雙平面星軌、游標局部引力與
-連線、點觸漣漪及卡片追光。效果限於裝飾與互動區域，關閉、頁面隱藏或
-區域離開畫面時停止持續運算。作業系統的 `prefers-reduced-motion` 優先於頁內設定，
-減少動畫時停用沉浸效果與持續動畫。
+`assets/js/immersive.js` 壓縮為 `/js/immersive.min.js`。只有按下沉浸或奢華模式按鈕後才
+動態載入；不預先下載、不跨頁自動啟用。普通沉浸提供事件驅動的卡片追光；首頁另有
+canvas 光場，包含三層星場、雙平面星軌、游標局部引力與連線、點觸漣漪。光場可拖曳
+並以阻尼回彈，觸控保留垂直捲動。普通沉浸的首頁光場限制在約 30 fps，其他頁面不建立
+持續的 `requestAnimationFrame` 迴圈。
+
+奢華模式每頁都建立固定的全頁 canvas，加入指標尾流、點觸水波、捲動景深與風格專屬場景：
+
+| 風格 | 全頁場景與元件語彙 |
+|------|--------------------|
+| 光網 | 切角光速隧道、掃描線、透視網格與電路折射 |
+| 深空 | 星雲、多層星軌、受指標引力影響的星塵與圓弧玻璃 |
+| 閱讀 | 透明折紙、墨流與水紋；以紙片取代星塵 |
+
+日間著重折射與深色細線，夜間強化發光層次。奢華的全頁與首頁 canvas 跟隨螢幕刷新率，
+不套用普通模式的 30 fps 限制；canvas 像素比最高 2.5。按鈕、導覽、標籤、目錄與設定
+元件也加入追光、微傾斜及點擊漣漪，玻璃面板有折射與景深。標題、段落和清單保留原有
+文字 DOM，以整個區塊浮動及跟隨游標產生景深。選取文字或表單取得焦點時，文字與面板
+位移暫停，背景繼續運作，避免打斷閱讀和操作。
+
+開啟奢華會連動開啟沉浸，關閉奢華會銷毀全頁背景與文字動態、保留普通沉浸；關閉沉浸
+則兩者都停止。沉浸與奢華都不儲存為跨頁偏好。首頁光場離開畫面時停止運算；頁面隱藏時
+全頁與首頁 canvas 都暫停，關閉時清理 canvas、事件與暫時加入的文字屬性。
+作業系統的 `prefers-reduced-motion` 優先於頁內設定；任一處要求減少動畫時，
+停用沉浸、奢華與持續動畫。
 
 ## 腳本邊界
 
@@ -95,7 +119,8 @@ inline script、事件處理屬性、JavaScript URL 與遠端腳本。
 base path 從 Hugo 實際設定讀取，支援壓縮後不帶引號的 HTML 屬性；不依賴某篇範例文章存在。
 圖片 alt／遠端來源由 render hook 檢查。偏好邏輯另以 `node scripts/test-appearance.cjs`
 測試，不需要 npm 安裝；網站建置本身不使用 Node。畫面與互動仍須在瀏覽器檢查手機／桌面、
-三種風格、自訂色、鍵盤、關閉 JavaScript 及減少動畫，不能以建置通過代替。
+三種風格各自的日／夜模式、自訂色、沉浸／奢華連動、鍵盤、關閉 JavaScript 及減少動畫，
+不能以建置通過代替。
 
 GitHub Actions 在 Windows／Linux 執行同一套檢查；一般驗證與 Pages build 都包含
 `node scripts/test-appearance.cjs` 的偏好及沉浸生命週期回歸測試，無需 npm 安裝。

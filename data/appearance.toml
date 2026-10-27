@@ -1,30 +1,58 @@
-# 六個標準色控制整站。使用完整 #RRGGBB；邊線、陰影、光暈由 CSS 混色衍生。
-# 網頁「外觀」面板的調色只保存在該訪客的瀏覽器；修改這裡會更新全站預設。
+# 每種風格都有獨立的白天／夜晚六色。使用完整 #RRGGBB；細節由 CSS 混色衍生。
+# 網頁調色只保存在訪客瀏覽器；修改這裡會更新全站預設。
 default_style = "grid"
+default_mode = "night"
 
 [styles.grid]
 name = "光網"
-bg = "#080f18"
-surface = "#101d2a"
-text = "#e2edf3"
-muted = "#9aadb9"
-primary = "#75d9e6"
-secondary = "#678fce"
+[styles.grid.night]
+bg = "#050c16"
+surface = "#0c1a29"
+text = "#f1f7fc"
+muted = "#bdcfdf"
+primary = "#82edfa"
+secondary = "#a4c6ff"
+
+[styles.grid.day]
+bg = "#f0f8fc"
+surface = "#ffffff"
+text = "#142a3c"
+muted = "#344c60"
+primary = "#075467"
+secondary = "#254b94"
 
 [styles.paper]
 name = "閱讀"
-bg = "#f3f1eb"
-surface = "#fbfaf6"
-text = "#253640"
-muted = "#586d77"
-primary = "#196777"
-secondary = "#42628e"
+[styles.paper.night]
+bg = "#131611"
+surface = "#1d231c"
+text = "#faf8ed"
+muted = "#d5dcc9"
+primary = "#b9e4b5"
+secondary = "#c5d3ff"
+
+[styles.paper.day]
+bg = "#f7f4eb"
+surface = "#fffdf7"
+text = "#272e26"
+muted = "#444e42"
+primary = "#235743"
+secondary = "#394d80"
 
 [styles.deep]
 name = "深空"
-bg = "#0c0e17"
-surface = "#151a28"
-text = "#e1e5f1"
-muted = "#a3acc5"
-primary = "#a6b8e8"
-secondary = "#77c5ce"
+[styles.deep.night]
+bg = "#080a17"
+surface = "#12172b"
+text = "#f4f3ff"
+muted = "#c6cbe4"
+primary = "#c6ceff"
+secondary = "#8ce5e6"
+
+[styles.deep.day]
+bg = "#f4f5ff"
+surface = "#ffffff"
+text = "#20223b"
+muted = "#464761"
+primary = "#454c91"
+secondary = "#155962"

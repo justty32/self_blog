@@ -1,6 +1,9 @@
 /* Six editable seeds are the source of every interface colour. */
 :root {
   color-scheme: dark;
+  --body-size: 1.25rem;
+  --ui-size: 1rem;
+  --small-size: .9375rem;
   --bg: var(--seed-bg);
   --surface: var(--seed-surface);
   --text: var(--seed-text);
@@ -8,7 +11,8 @@
   --accent: var(--seed-primary);
   --accent-2: var(--seed-secondary);
   --surface-2: color-mix(in srgb, var(--surface) 88%, var(--accent));
-  --border: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --border: color-mix(in srgb, var(--accent) 38%, var(--surface));
+  --control-border: color-mix(in srgb, var(--muted) 75%, var(--surface));
   --border-bright: color-mix(in srgb, var(--accent) 60%, var(--surface));
   --code: color-mix(in srgb, var(--bg) 75%, var(--surface));
   --glow: color-mix(in srgb, var(--accent) 12%, transparent);
@@ -28,7 +32,8 @@ body {
   margin: 0;
   color: var(--text);
   background: radial-gradient(ellipse at 80% 14%, var(--glow-blue), transparent 42rem), var(--bg);
-  line-height: 1.75;
+  font-size: var(--body-size);
+  line-height: 1.8;
   overflow-wrap: anywhere;
   isolation: isolate;
 }
@@ -42,7 +47,7 @@ body::before {
   background-size: 64px 64px;
   mask-image: linear-gradient(transparent, var(--bg) 15%, transparent 90%);
 }
-a { color: var(--accent); text-decoration-thickness: .07em; text-underline-offset: .22em; transition: color .2s; }
+a { color: var(--accent); text-decoration-thickness: .07em; text-underline-offset: .22em; transition: color .2s, background-color .25s, border-color .25s, box-shadow .25s; }
 a:hover { color: color-mix(in srgb, var(--accent) 65%, var(--text)); }
 a, button, summary, input, select { -webkit-tap-highlight-color: transparent; }
 button, input, select { font: inherit; }

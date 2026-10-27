@@ -1,16 +1,18 @@
 {{- /* Keep cascade order explicit and publish one stylesheet at the stable URL. */ -}}
 {{- $paletteCSS := "" -}}
 {{- range $style := slice "grid" "paper" "deep" -}}
-  {{- $palette := index hugo.Data.appearance.styles $style -}}
-  {{- $paletteCSS = printf "%s:root[data-style=%s]{" $paletteCSS $style -}}
-  {{- range $key := slice "bg" "surface" "text" "muted" "primary" "secondary" -}}
-    {{- $color := index $palette $key -}}
-    {{- if not (findRE `^#[0-9a-fA-F]{6}$` $color) -}}
-      {{- errorf "data/appearance.toml: styles.%s.%s must be a six-digit hex color" $style $key -}}
+  {{- range $mode := slice "night" "day" -}}
+    {{- $palette := index (index hugo.Data.appearance.styles $style) $mode -}}
+    {{- $paletteCSS = printf "%s:root[data-style=%s][data-mode=%s]{" $paletteCSS $style $mode -}}
+    {{- range $key := slice "bg" "surface" "text" "muted" "primary" "secondary" -}}
+      {{- $color := index $palette $key -}}
+      {{- if not (findRE `^#[0-9a-fA-F]{6}$` $color) -}}
+        {{- errorf "data/appearance.toml: styles.%s.%s.%s must be a six-digit hex color" $style $mode $key -}}
+      {{- end -}}
+      {{- $paletteCSS = printf "%s--seed-%s:%s;" $paletteCSS $key $color -}}
     {{- end -}}
-    {{- $paletteCSS = printf "%s--seed-%s:%s;" $paletteCSS $key $color -}}
+    {{- $paletteCSS = printf "%s}\n" $paletteCSS -}}
   {{- end -}}
-  {{- $paletteCSS = printf "%s}\n" $paletteCSS -}}
 {{- end -}}
 {{- $palettes := resources.FromString "css/generated-palettes.css" $paletteCSS -}}
 {{- $styles := slice

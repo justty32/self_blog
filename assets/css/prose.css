@@ -1,4 +1,4 @@
-.prose { max-width: 48rem; font-size: 1.06rem; line-height: 1.95; }
+.prose { max-width: 48rem; font-size: var(--body-size); line-height: 1.95; }
 .prose > * + * { margin-top: 1.35em; }
 .prose > :first-child { margin-top: 0; }
 .prose h2, .prose h3, .prose h4 { margin-top: 2.4em; scroll-margin-top: 7rem; }
@@ -10,13 +10,13 @@
 .prose blockquote { margin-inline: 0; padding: .6rem 1.3rem; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--surface) 70%, transparent); color: var(--muted); }
 .prose blockquote > :first-child { margin-top: 0; }
 .prose blockquote > :last-child { margin-bottom: 0; }
-.prose code { padding: .18em .38em; border: 1px solid var(--border); border-radius: 3px; background: var(--code); color: var(--accent); font-family: var(--mono); font-size: .84em; }
+.prose code { padding: .18em .38em; border: 1px solid var(--border); border-radius: 3px; background: var(--code); color: var(--accent); font-family: var(--mono); font-size: .9em; }
 .prose pre { overflow-x: auto; padding: 1.3rem; border: 1px solid var(--border); border-left-color: var(--accent-2); border-radius: var(--radius); background: var(--code); line-height: 1.75; tab-size: 4; }
-.prose pre code { padding: 0; border: 0; background: transparent; color: var(--text); font-size: .84rem; }
+.prose pre code { padding: 0; border: 0; background: transparent; color: var(--text); font-size: 1.0625rem; }
 .prose img { display: block; max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 .prose figure { margin-inline: 0; }
-.prose figcaption { margin-top: .6rem; color: var(--muted); font-size: .8rem; text-align: center; }
-.prose table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: .9rem; }
+.prose figcaption { margin-top: .6rem; color: var(--muted); font-size: .9375rem; text-align: center; }
+.prose table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 1.0625rem; }
 .prose th, .prose td { padding: .65rem .9rem; border: 1px solid var(--border); text-align: start; }
 .prose th { background: var(--surface-2); }
 .prose hr { margin-block: 2.5rem; border: 0; border-top: 1px solid var(--border); }

@@ -1,5 +1,7 @@
 {{- $defaultStyle := hugo.Data.appearance.default_style | default "grid" -}}
 {{- if not (in (slice "grid" "paper" "deep") $defaultStyle) -}}{{- $defaultStyle = "grid" -}}{{- end -}}
+{{- $defaultMode := hugo.Data.appearance.default_mode | default "night" -}}
+{{- if not (in (slice "day" "night") $defaultMode) -}}{{- $defaultMode = "night" -}}{{- end -}}
 <details class="appearance-panel" data-appearance-controls hidden data-palettes="{{ hugo.Data.appearance.styles | jsonify }}">
   <summary class="appearance-trigger"><span aria-hidden="true">◈</span> 外觀</summary>
   <div class="appearance-popover">
@@ -11,20 +13,22 @@
         {{ end }}
       </select>
     </label>
+    <div class="setting-row"><span>日夜模式</span><button class="mode-toggle" type="button" data-mode-toggle aria-pressed="false">切換日夜</button></div>
     <fieldset class="color-settings">
-      <legend>基準色彩</legend>
+      <legend>目前風格與日夜的配色</legend>
       <div class="color-grid">
         {{ range slice (dict "key" "bg" "name" "背景") (dict "key" "surface" "name" "面板") (dict "key" "text" "name" "文字") (dict "key" "muted" "name" "次要文字") (dict "key" "primary" "name" "主色") (dict "key" "secondary" "name" "輔色") }}
-        <label class="color-field"><span>{{ .name }}</span><input type="color" data-color-key="{{ .key }}" value="{{ index (index hugo.Data.appearance.styles $defaultStyle) .key }}"></label>
+        <label class="color-field"><span>{{ .name }}</span><input type="color" data-color-key="{{ .key }}" value="{{ index (index (index hugo.Data.appearance.styles $defaultStyle) $defaultMode) .key }}"></label>
         {{ end }}
       </div>
     </fieldset>
     <div class="setting-row"><label for="appearance-motion">動態效果</label><input id="appearance-motion" type="checkbox" data-motion-toggle checked></div>
     <div class="settings-actions">
       <button class="button" type="button" data-immersive-toggle aria-pressed="false">開啟沉浸模式</button>
+      <button class="button luxury-trigger" type="button" data-luxury-toggle aria-pressed="false">開啟奢華特效</button>
       <button class="text-button" type="button" data-reset-colors>重設配色</button>
     </div>
-    <p class="settings-note">沉浸模式在首頁加入互動光點，需手動開啟。風格與配色儲存在這個瀏覽器。</p>
+    <p class="settings-note">沉浸模式加入細緻互動；首頁光場可拖曳，奢華模式全開全頁背景、游標尾流、文字景深與玻璃光效。每頁需手動開啟；風格、日夜與配色會保留。</p>
     <span class="settings-status" data-appearance-status role="status" aria-live="polite"></span>
   </div>
 </details>

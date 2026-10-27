@@ -6,7 +6,10 @@
       <li><a href="{{ .URL }}"{{ if eq $.RelPermalink .URL }} aria-current="page"{{ end }}>{{ .Name }}</a></li>
       {{ end }}
     </ul>
-    {{ partial "appearance.html" . }}
+    <div class="nav-controls">
+      <button class="mode-toggle" type="button" data-mode-toggle aria-pressed="false" hidden>切換日夜</button>
+      {{ partial "appearance.html" . }}
+    </div>
   </nav>
 </header>
 

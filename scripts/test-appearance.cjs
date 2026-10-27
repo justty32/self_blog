@@ -6,159 +6,232 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../assets/js/preferences.js'), 'utf8');
 const keys = ['bg', 'surface', 'text', 'muted', 'primary', 'secondary'];
 const palettes = Object.fromEntries(['grid', 'paper', 'deep'].map((name, index) => [name,
-  Object.fromEntries(keys.map((key, k) => [key, '#' + (0x102030 + index * 0x202020 + k).toString(16)]))]));
+  Object.fromEntries(['night', 'day'].map((mode, m) => [mode,
+    Object.fromEntries(keys.map((key, k) => [key, '#' + (0x102030 + index * 0x202020 + m * 0x101010 + k).toString(16)]))]))]));
 class Element {
-  constructor(dataset = {}) { this.dataset = dataset; this.events = {}; this.attributes = {}; this.properties = {}; this.style = { setProperty: (k, v) => { this.properties[k] = v; } }; }
-  addEventListener(name, callback) { this.events[name] = callback; }
-  setAttribute(name, value) { this.attributes[name] = value; }
-  removeAttribute(name) { delete this.attributes[name]; }
-  dispatch(name) { return this.events[name]?.({}); }
+  constructor(dataset = {}) {
+    this.dataset = dataset; this.events = new Map(); this.attributes = {}; this.properties = {};
+    this.style = { setProperty: (k, v) => { this.properties[k] = v; }, removeProperty: k => { delete this.properties[k]; }, getPropertyValue: k => this.properties[k] || '', getPropertyPriority: () => '' };
+  }
+  addEventListener(name, callback) { if (!this.events.has(name)) this.events.set(name, new Set()); this.events.get(name).add(callback); }
+  removeEventListener(name, callback) { this.events.get(name)?.delete(callback); if (!this.events.get(name)?.size) this.events.delete(name); }
+  setAttribute(name, value) { this.attributes[name] = value; if (name.startsWith('data-')) this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = value; }
+  getAttribute(name) { return this.attributes[name] ?? null; }
+  removeAttribute(name) { delete this.attributes[name]; if (name.startsWith('data-')) delete this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())]; }
+  dispatch(name, event = {}) { return Promise.all([...(this.events.get(name) || [])].map(fn => fn(event))); }
 }
-function setup({ saved, blocked = false, reduced = false } = {}) {
-  const root = new Element();
-  const select = new Element();
-  const motion = new Element();
-  const reset = new Element();
-  const buttons = [new Element(), new Element()];
-  const status = new Element();
-  const colors = keys.map(colorKey => new Element({ colorKey }));
-  const panel = new Element({ palettes: JSON.stringify(palettes) });
-  panel.hidden = true;
+function setup({ saved, legacy, blocked = false, reduced = false, hasScene = true, loader } = {}) {
+  const root = new Element({ style: 'grid', mode: 'night', immersive: 'off', luxury: 'off' });
+  const select = new Element(), motion = new Element(), reset = new Element();
+  const buttons = [new Element(), new Element()], luxuryButtons = [new Element(), new Element()], modeButtons = [new Element(), new Element()];
+  const status = new Element(), colors = keys.map(colorKey => new Element({ colorKey }));
+  const panel = new Element({ palettes: JSON.stringify(palettes) }); panel.hidden = true;
   panel.querySelector = query => ({ '[data-style-select]': select, '[data-motion-toggle]': motion,
     '[data-reset-colors]': reset, '[data-appearance-status]': status }[query]);
   panel.querySelectorAll = () => colors;
   const media = new Element(); media.matches = reduced;
-  const storage = new Map(saved ? [['self-blog-appearance-v1', JSON.stringify(saved)]] : []);
-  const document = new Element();
-  document.documentElement = root;
+  const storage = new Map();
+  if (saved) storage.set('self-blog-appearance-v2', JSON.stringify(saved));
+  if (legacy) storage.set('self-blog-appearance-v1', JSON.stringify(legacy));
+  const document = new Element(); document.documentElement = root; document.baseURI = 'https://example.com/self_blog/';
   document.currentScript = { dataset: { immersiveSrc: '/self_blog/js/immersive.min.js' } };
-  document.querySelector = query => query === '[data-appearance-controls]' ? panel : query === '[data-immersive-scene]' ? {} : null;
-  document.querySelectorAll = query => query === '[data-immersive-toggle]' ? buttons : [];
+  document.querySelector = query => query === '[data-appearance-controls]' ? panel : query === '[data-immersive-scene]' && hasScene ? {} : null;
+  document.querySelectorAll = query => ({ '[data-immersive-toggle]': buttons, '[data-luxury-toggle]': luxuryButtons, '[data-mode-toggle]': modeButtons }[query] || []);
   document.dispatchEvent = () => {};
   const window = new Element(); window.matchMedia = () => media;
-  const context = vm.createContext({ document, window, navigator: {}, CustomEvent: class {},
+  const loads = [], instances = [];
+  const module = { createImmersive(scene, options) {
+    const instance = { scene, luxury: options.luxury, destroyed: false,
+      setLuxury(value) { this.luxury = value; }, destroy() { this.destroyed = true; } };
+    instances.push(instance); return instance;
+  } };
+  const context = vm.createContext({ document, window, navigator: {}, CustomEvent: class {}, URL,
+    loadModule: url => { loads.push(url); return loader ? loader(url, module) : Promise.resolve(module); },
     localStorage: {
       getItem: key => { if (blocked) throw Error('Blocked'); return storage.get(key); },
       setItem: (key, value) => { if (blocked) throw Error('Blocked'); storage.set(key, value); }
     }
   });
-  vm.runInContext(source, context);
-  return { root, select, motion, reset, buttons, status, colors, panel, media, storage };
+  // Inject the module boundary; real browser QA separately exercises native import.
+  vm.runInContext(source.replace('import(moduleSource)', 'loadModule(moduleSource)'), context);
+  return { root, select, motion, reset, buttons, luxuryButtons, modeButtons, status, colors, panel, media, storage, loads, instances, window };
 }
 let checks = 0;
-function check(name, callback) { callback(); checks++; console.log('PASS ' + name); }
-check('safe defaults expose controls without enabling immersive effects', () => {
-  const app = setup();
-  assert.equal(app.panel.hidden, false);
-  assert.equal(app.root.dataset.style, 'grid');
-  assert.equal(app.root.dataset.motion, 'full');
-  assert.notEqual(app.root.dataset.immersive, 'on');
-});
-check('saved colors survive reload and stay separate between styles', () => {
-  const app = setup();
-  app.colors[4].value = '#abcdef'; app.colors[4].dispatch('input');
-  app.select.value = 'paper'; app.select.dispatch('change');
-  assert.equal(app.root.properties['--seed-primary'], palettes.paper.primary);
-  app.select.value = 'grid'; app.select.dispatch('change');
-  assert.equal(app.root.properties['--seed-primary'], '#abcdef');
-  const restored = setup({ saved: JSON.parse(app.storage.get('self-blog-appearance-v1')) });
-  assert.equal(restored.colors[4].value, '#abcdef');
-});
-check('reset affects only selected style', () => {
-  const app = setup({ saved: { style: 'paper', colors: { grid: { primary: '#abcdef' }, paper: { primary: '#123456' } } } });
-  app.reset.dispatch('click');
-  assert.equal(app.colors[4].value, palettes.paper.primary);
-  app.select.value = 'grid'; app.select.dispatch('change');
-  assert.equal(app.colors[4].value, '#abcdef');
-});
-check('invalid storage colors and unknown theme never enter CSS', () => {
-  const app = setup({ saved: { style: 'missing', motion: 'yes', colors: { grid: { bg: 'url(x)', primary: '#ff' } } } });
-  assert.equal(app.root.dataset.style, 'grid');
-  assert.equal(app.root.properties['--seed-bg'], palettes.grid.bg);
-  app.colors[0].value = 'red;display:none'; app.colors[0].dispatch('input');
-  assert.equal(app.root.properties['--seed-bg'], palettes.grid.bg);
-});
-check('storage denial preserves functional current-page controls', () => {
-  const app = setup({ blocked: true });
-  app.select.value = 'deep'; app.select.dispatch('change');
-  assert.equal(app.root.dataset.style, 'deep');
-  assert.match(app.status.textContent, /無法保存/);
-});
-check('OS reduced motion wins while preserving saved user preference', () => {
-  const app = setup({ reduced: true, saved: { motion: true, immersive: true } });
-  assert.equal(app.root.dataset.motion, 'reduced');
-  assert.equal(app.motion.disabled, true);
-  assert.equal(app.buttons.every(button => button.disabled), true);
-  assert.equal(app.root.dataset.immersive, 'off');
-  app.media.matches = false; app.media.dispatch('change');
-  assert.equal(app.root.dataset.motion, 'full');
-  assert.equal(app.motion.checked, true);
-});
-check('manual reduced motion updates all immersive triggers', () => {
-  const app = setup();
-  app.motion.checked = false; app.motion.dispatch('change');
-  assert.equal(app.root.dataset.motion, 'reduced');
-  for (const button of app.buttons) {
-    assert.equal(button.attributes['aria-pressed'], 'false');
-    assert.equal(button.disabled, true);
-  }
-});
-console.log(`APPEARANCE PASS — ${checks} behavior checks`);
-
+async function check(name, callback) { await callback(); checks++; console.log('PASS ' + name); }
+const flush = () => new Promise(resolve => setImmediate(resolve));
 (async () => {
+  await check('safe defaults expose controls without downloading effects', () => {
+    const app = setup();
+    assert.equal(app.panel.hidden, false); assert.equal(app.root.dataset.style, 'grid');
+    assert.equal(app.root.dataset.mode, 'night'); assert.equal(app.loads.length, 0);
+    assert.equal(app.root.dataset.immersive, 'off'); assert.equal(app.root.dataset.luxury, 'off');
+  });
+  await check('v1 migration retains every old color in its original light/dark context', () => {
+    const legacy = { style: 'paper', motion: false, colors: { grid: { primary: '#abcdef' }, paper: { bg: '#ffeedd' }, deep: { muted: '#ccddee' } } };
+    const app = setup({ legacy });
+    const saved = JSON.parse(app.storage.get('self-blog-appearance-v2'));
+    assert.equal(saved.mode, 'day'); assert.equal(saved.style, 'paper'); assert.equal(saved.motion, false);
+    assert.equal(saved.colors.grid.night.primary, '#abcdef'); assert.equal(saved.colors.paper.day.bg, '#ffeedd');
+    assert.equal(saved.colors.deep.night.muted, '#ccddee');
+    assert.deepEqual(JSON.parse(app.storage.get('self-blog-appearance-v1')), legacy);
+  });
+  await check('style and day/night are independent and all six palettes keep their own edits', () => {
+    const app = setup();
+    app.colors[4].value = '#abcdef'; app.colors[4].dispatch('input');
+    app.modeButtons[0].dispatch('click');
+    assert.equal(app.root.dataset.mode, 'day'); assert.equal(app.colors[4].value, palettes.grid.day.primary);
+    app.colors[4].value = '#123456'; app.colors[4].dispatch('input');
+    app.select.value = 'paper'; app.select.dispatch('change'); assert.equal(app.root.dataset.mode, 'day');
+    app.select.value = 'grid'; app.select.dispatch('change'); assert.equal(app.colors[4].value, '#123456');
+    app.modeButtons[1].dispatch('click'); assert.equal(app.colors[4].value, '#abcdef');
+    const restored = setup({ saved: JSON.parse(app.storage.get('self-blog-appearance-v2')) });
+    assert.equal(restored.colors[4].value, '#abcdef'); assert.equal(restored.modeButtons[0].textContent, '夜晚');
+  });
+  await check('reset affects only the current style/mode pair', () => {
+    const app = setup({ saved: { style: 'paper', mode: 'day', colors: { paper: { day: { primary: '#123456' }, night: { primary: '#abcdef' } } } } });
+    app.reset.dispatch('click'); assert.equal(app.colors[4].value, palettes.paper.day.primary);
+    app.modeButtons[0].dispatch('click'); assert.equal(app.colors[4].value, '#abcdef');
+  });
+  await check('invalid stored colors and unknown style/mode cannot enter CSS', () => {
+    const app = setup({ saved: { style: 'missing', mode: 'bad', colors: { grid: { night: { bg: 'url(x)', primary: '#ff' } } } } });
+    assert.equal(app.root.dataset.style, 'grid'); assert.equal(app.root.dataset.mode, 'night');
+    assert.equal(app.root.properties['--seed-bg'], palettes.grid.night.bg);
+    app.colors[0].value = 'red;display:none'; app.colors[0].dispatch('input');
+    assert.equal(app.root.properties['--seed-bg'], palettes.grid.night.bg);
+  });
+  await check('storage denial preserves current-page controls', () => {
+    const app = setup({ blocked: true }); app.modeButtons[0].dispatch('click');
+    assert.equal(app.root.dataset.mode, 'day'); assert.match(app.status.textContent, /無法保存/);
+  });
+  await check('luxury implies immersive, downgrade keeps immersive, full stop clears both', async () => {
+    const app = setup(); app.luxuryButtons[0].dispatch('click'); await flush();
+    assert.equal(app.root.dataset.luxury, 'on'); assert.equal(app.root.dataset.immersive, 'on');
+    assert.equal(app.instances[0].luxury, true); assert.equal(app.loads.length, 1);
+    app.luxuryButtons[1].dispatch('click');
+    assert.equal(app.root.dataset.luxury, 'off'); assert.equal(app.root.dataset.immersive, 'on');
+    assert.equal(app.instances[0].luxury, false);
+    app.buttons[0].dispatch('click'); assert.equal(app.root.dataset.immersive, 'off'); assert.equal(app.instances[0].destroyed, true);
+    assert.equal(app.storage.size, 0, 'effects are not persisted');
+  });
+  await check('luxury works on article pages without a hero', async () => {
+    const app = setup({ hasScene: false }); app.luxuryButtons[0].dispatch('click'); await flush();
+    assert.equal(app.root.dataset.luxury, 'on'); assert.equal(app.instances[0].scene, null);
+  });
+  await check('cancel while module loads does not create late effects', async () => {
+    let resolve;
+    const app = setup({ loader: (url, module) => new Promise(done => { resolve = () => done(module); }) });
+    app.luxuryButtons[0].dispatch('click'); app.buttons[1].dispatch('click'); resolve(); await flush();
+    assert.equal(app.instances.length, 0); assert.equal(app.root.dataset.luxury, 'off');
+    assert.equal(app.luxuryButtons[0].attributes['aria-pressed'], 'false');
+  });
+  await check('luxury changes during loading apply the latest requested level', async () => {
+    let resolve;
+    const app = setup({ loader: (url, module) => new Promise(done => { resolve = () => done(module); }) });
+    app.luxuryButtons[0].dispatch('click'); app.luxuryButtons[1].dispatch('click'); resolve(); await flush();
+    assert.equal(app.instances[0].luxury, false); assert.equal(app.root.dataset.immersive, 'on');
+  });
+  await check('failed import retries with a new URL while first request remains stable', async () => {
+    let calls = 0;
+    const app = setup({ loader: (url, module) => ++calls === 1 ? Promise.reject(Error('Network')) : Promise.resolve(module) });
+    app.buttons[0].dispatch('click'); await flush(); assert.equal(app.root.dataset.immersive, 'off');
+    app.buttons[0].dispatch('click'); await flush(); assert.equal(app.root.dataset.immersive, 'on');
+    assert.equal(app.loads[0], '/self_blog/js/immersive.min.js'); assert.match(app.loads[1], /\?retry=1$/);
+  });
+  await check('OS and manual reduced motion stop luxury and disable both controls', async () => {
+    const app = setup(); app.luxuryButtons[0].dispatch('click'); await flush();
+    app.media.matches = true; app.media.dispatch('change');
+    assert.equal(app.root.dataset.motion, 'reduced'); assert.equal(app.instances[0].destroyed, true);
+    assert.equal(app.root.dataset.luxury, 'off'); assert.equal(app.buttons[0].disabled, true); assert.equal(app.luxuryButtons[0].disabled, true);
+    app.media.matches = false; app.media.dispatch('change'); assert.equal(app.root.dataset.motion, 'full');
+    app.motion.checked = false; app.motion.dispatch('change'); assert.equal(app.root.dataset.motion, 'reduced');
+  });
+  console.log(`APPEARANCE PASS — ${checks} behavior checks`);
+  await testImmersive();
+})().catch(error => { console.error(error); process.exitCode = 1; });
+
+async function testImmersive() {
   const moduleSource = fs.readFileSync(path.join(__dirname, '../assets/js/immersive.js'), 'utf8');
   const { createImmersive } = await import('data:text/javascript;base64,' + Buffer.from(moduleSource).toString('base64'));
   const changed = ['document', 'window', 'getComputedStyle', 'ResizeObserver', 'IntersectionObserver', 'requestAnimationFrame', 'cancelAnimationFrame'];
   const previous = Object.fromEntries(changed.map(key => [key, global[key]]));
-  class Target {
-    constructor() { this.events = new Map(); }
-    addEventListener(name, fn) { this.events.set(name, fn); }
-    removeEventListener(name, fn) { if (this.events.get(name) === fn) this.events.delete(name); }
-  }
-  const document = new Target(); document.hidden = false;
-  document.documentElement = {}; document.querySelectorAll = () => [];
-  const media = new Target(); media.matches = false;
-  const scene = new Target(); scene.getBoundingClientRect = () => ({ width: 500, height: 420, left: 0, top: 0 });
-  const context = new Proxy({}, { get: (object, key) => object[key] || (() => {}) });
+  const document = new Element(); document.hidden = false; document.documentElement = new Element({ style: 'grid', mode: 'night' });
+  const heading = new Element(); let geometryReads = 0;
+  heading.style.setProperty('--text-x', '9px');
+  heading.getBoundingClientRect = () => { geometryReads++; return { left: 100, right: 700, top: 80, bottom: 280, width: 600, height: 200 }; };
+  document.querySelectorAll = selector => selector.startsWith('h1,') ? [heading] : [];
+  let selection = { isCollapsed: true, rangeCount: 0 };
+  document.getSelection = () => selection;
+  const children = [];
+  document.body = { append: node => children.push(node) };
+  const gradient = { addColorStop() {} };
+  const context = new Proxy({ createLinearGradient: () => gradient, createRadialGradient: () => gradient }, { get: (object, key) => object[key] || (() => {}) });
+  document.createElement = () => {
+    const canvas = new Element(); canvas.getContext = () => context;
+    canvas.remove = () => { const index = children.indexOf(canvas); if (index >= 0) children.splice(index, 1); };
+    return canvas;
+  };
+  const media = new Element(); media.matches = false;
+  const scene = new Element(); scene.getBoundingClientRect = () => ({ width: 500, height: 420, left: 0, top: 0 });
   scene.querySelector = () => ({ getContext: () => context });
   const frames = new Map(); let frameID = 0;
   const observers = [];
   class Observer {
-    constructor(callback) { this.callback = callback; this.disconnected = false; observers.push(this); }
-    observe() {}
-    disconnect() { this.disconnected = true; }
+    constructor(callback) { this.callback = callback; this.disconnected = false; this.targets = []; observers.push(this); }
+    observe(node) { this.targets.push(node); } disconnect() { this.disconnected = true; }
   }
-  Object.assign(global, { document, window: { matchMedia: () => media, devicePixelRatio: 3 },
-    getComputedStyle: () => ({ getPropertyValue: () => '#75d9e6' }),
-    ResizeObserver: Observer, IntersectionObserver: Observer,
-    requestAnimationFrame: callback => { frames.set(++frameID, callback); return frameID; },
-    cancelAnimationFrame: id => frames.delete(id)
+  const window = new Element(); Object.assign(window, { matchMedia: () => media, devicePixelRatio: 3, innerWidth: 1280, innerHeight: 800, scrollY: 0 });
+  Object.assign(global, { document, window,
+    getComputedStyle: () => ({ getPropertyValue: () => '#75d9e6' }), ResizeObserver: Observer, IntersectionObserver: Observer,
+    requestAnimationFrame: callback => { frames.set(++frameID, callback); return frameID; }, cancelAnimationFrame: id => frames.delete(id)
   });
   try {
-    const effect = createImmersive(scene);
-    assert.equal(frames.size, 1, 'one rendering loop');
-    document.hidden = true; document.events.get('visibilitychange')();
-    assert.equal(frames.size, 0, 'hidden document cancels frame');
-    document.hidden = false; document.events.get('visibilitychange')();
-    assert.equal(frames.size, 1, 'visible document resumes once');
-    observers[1].callback([{ isIntersecting: false }]);
-    assert.equal(frames.size, 0, 'offscreen hero cancels frame');
-    observers[1].callback([{ isIntersecting: true }]);
-    assert.equal(frames.size, 1);
-    media.matches = true; media.events.get('change')();
-    assert.equal(frames.size, 0, 'reduced motion cancels frame');
-    effect.destroy(); effect.destroy();
-    assert.equal(frames.size, 0);
-    assert.equal(scene.events.size, 0, 'pointer and touch listeners cleaned up');
-    assert.equal(document.events.size, 0, 'document listeners cleaned up');
-    assert.equal(media.events.size, 0, 'media listener cleaned up');
-    assert.equal(observers.every(observer => observer.disconnected), true);
-    console.log('PASS immersive suspends offscreen/hidden/reduced and cleans up idempotently');
-  } finally {
-    for (const key of changed) {
-      if (previous[key] === undefined) delete global[key];
-      else global[key] = previous[key];
+    const basic = createImmersive(null); assert.equal(frames.size, 0, 'ordinary no-hero mode remains event-driven'); basic.destroy();
+    const noScene = createImmersive(null, { luxury: true });
+    assert.equal(frames.size, 1, 'luxury starts full-page background without a hero'); assert.equal(children.length, 1);
+    const [globalID, globalDraw] = frames.entries().next().value; frames.delete(globalID); globalDraw(100);
+    assert.equal(frames.size, 1, 'one full-page render loop after a frame');
+    assert.notEqual(heading.properties['--text-x'], '0.000px', 'plain text responds to nearby pointer');
+    const firstReads = geometryReads;
+    const [nextID, nextDraw] = frames.entries().next().value; frames.delete(nextID); nextDraw(116);
+    assert.equal(geometryReads, firstReads, 'text layout is cached between ordinary frames');
+    selection = { isCollapsed: false, rangeCount: 1 }; document.dispatch('selectionchange');
+    assert.equal(document.documentElement.dataset.textFrozen, 'true');
+    const frozenX = heading.properties['--text-x'];
+    const [frozenID, frozenDraw] = frames.entries().next().value; frames.delete(frozenID); frozenDraw(132);
+    assert.equal(heading.properties['--text-x'], frozenX, 'selected text stops moving');
+    selection = { isCollapsed: true, rangeCount: 0 }; document.dispatch('selectionchange');
+    document.activeElement = { matches: () => true }; document.dispatch('focusin');
+    assert.equal(document.documentElement.dataset.textFrozen, 'true', 'editing forms freezes text and panels');
+    document.activeElement = null; document.dispatch('focusout'); await flush();
+    assert.equal(document.documentElement.dataset.textFrozen, undefined);
+    let time = 150;
+    for (const style of ['grid', 'deep', 'paper']) for (const mode of ['day', 'night']) {
+      document.documentElement.dataset.style = style; document.documentElement.dataset.mode = mode; document.dispatch('appearancechange');
+      const [styleID, styleDraw] = frames.entries().next().value; frames.delete(styleID); styleDraw(time += 16);
+      assert.equal(frames.size, 1, 'style/mode changes do not create another loop');
     }
+    noScene.setLuxury(false); assert.equal(frames.size, 0); assert.equal(children.length, 0);
+    assert.equal(heading.properties['--text-x'], '9px', 'text styles restore when luxury is turned off');
+    assert.equal(heading.dataset.luxuryText, undefined);
+    noScene.setLuxury(true); assert.equal(frames.size, 1); noScene.destroy(); assert.equal(frames.size, 0); assert.equal(children.length, 0);
+    const effect = createImmersive(scene, { luxury: true }); assert.equal(frames.size, 2, 'hero and full-page own separate render loops');
+    const heroObserver = observers.filter(observer => observer.targets.includes(scene)).at(-1);
+    scene.dispatch('pointerdown', { pointerId: 1, clientX: 50, clientY: 50, button: 0 }); assert.equal(scene.dataset.dragging, 'true');
+    scene.dispatch('pointermove', { pointerId: 1, clientX: 150, clientY: 80, pointerType: 'mouse' });
+    const [id, callback] = frames.entries().next().value; frames.delete(id); callback(100);
+    assert.notEqual(scene.properties['--scene-yaw'], '0.000deg', 'drag rotates scene');
+    scene.dispatch('pointerup', { pointerId: 1 }); assert.equal(scene.dataset.dragging, undefined);
+    document.hidden = true; document.dispatch('visibilitychange'); assert.equal(frames.size, 0);
+    document.hidden = false; document.dispatch('visibilitychange'); assert.equal(frames.size, 2);
+    heroObserver.callback([{ isIntersecting: false }]); assert.equal(frames.size, 1, 'global canvas keeps moving when hero leaves viewport');
+    heroObserver.callback([{ isIntersecting: true }]); assert.equal(frames.size, 2);
+    effect.setLuxury(false); assert.equal(frames.size, 1); assert.equal(children.length, 0);
+    media.matches = true; media.dispatch('change'); assert.equal(frames.size, 0);
+    effect.destroy(); effect.destroy(); assert.equal(frames.size, 0);
+    assert.equal(scene.events.size, 0); assert.equal(document.events.size, 0); assert.equal(media.events.size, 0); assert.equal(window.events.size, 0);
+    assert.equal(observers.every(observer => observer.disconnected), true); assert.equal(scene.properties['--scene-yaw'], undefined);
+    console.log('IMMERSIVE PASS — global luxury, separate loops, style changes, drag, visibility, reduced motion, and cleanup');
+  } finally {
+    for (const key of changed) { if (previous[key] === undefined) delete global[key]; else global[key] = previous[key]; }
   }
-  console.log('IMMERSIVE PASS — lifecycle and rendering-loop checks');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+}

@@ -1,5 +1,7 @@
+:root[data-mode="day"] { color-scheme: light; }
+:root[data-mode="night"] { color-scheme: dark; }
 /* Preset seeds come exclusively from data/appearance.toml via the head partial. */
-:root[data-style="paper"] { color-scheme: light; --radius: 2px; --shadow: 0 12px 35px color-mix(in srgb, var(--seed-text) 5%, transparent); --border: color-mix(in srgb, var(--seed-text) 15%, var(--bg)); --border-bright: color-mix(in srgb, var(--seed-primary) 40%, var(--bg)); }
+:root[data-style="paper"] { --radius: 2px; --shadow: 0 12px 35px color-mix(in srgb, var(--seed-text) 5%, transparent); --border: color-mix(in srgb, var(--seed-text) 32%, var(--bg)); --border-bright: color-mix(in srgb, var(--seed-primary) 65%, var(--bg)); }
 :root[data-style="paper"] body { background: var(--bg); }
 :root[data-style="paper"] body::before { display: none; }
 :root[data-style="paper"] .hero-title, :root[data-style="paper"] .page-header h1 { font-family: Georgia, "Noto Serif TC", "Songti TC", serif; font-weight: 500; letter-spacing: -.055em; }
@@ -7,10 +9,10 @@
 :root[data-style="paper"] .hero-status { padding: 0; border: 0; background: transparent; color: var(--muted); }
 :root[data-style="paper"] .status-dot { box-shadow: none; }
 :root[data-style="paper"] .brand-mark { transform: none; box-shadow: none; border-color: var(--border); }
-:root[data-style="paper"] .hero-visual { opacity: .6; }
+:root[data-style="paper"] .hero-visual { opacity: 1; }
 :root[data-style="paper"] .reactor-ring { animation: none; }
 :root[data-style="paper"] .scene-grid, :root[data-style="paper"] .light-trail { display: none; }
-:root[data-style="paper"] .reactor { transform: rotate(-23deg) scale(.84); }
+:root[data-style="paper"] .reactor { transform: rotateX(var(--scene-pitch, 0deg)) rotateY(var(--scene-yaw, 0deg)) rotateZ(-23deg) scale(.84) translateZ(var(--scene-depth, 0px)); }
 :root[data-style="paper"] .reactor-core { background: transparent; }
 :root[data-style="paper"] .post-list { grid-template-columns: 1fr; gap: 0; }
 :root[data-style="paper"] .post-card { min-height: 0; padding: 1.8rem 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; background: transparent; box-shadow: none; }
@@ -22,11 +24,11 @@
 :root[data-style="paper"] .prose { line-height: 2; }
 :root[data-style="paper"] .prose h2 { border: 0; }
 :root[data-style="paper"] .tag { border-color: transparent; padding-left: 0; }
-:root[data-style="deep"] { --radius: 16px; --border: color-mix(in srgb, var(--accent-2) 19%, var(--surface)); --border-bright: color-mix(in srgb, var(--accent-2) 45%, var(--surface)); }
+:root[data-style="deep"] { --radius: 16px; --border: color-mix(in srgb, var(--accent-2) 38%, var(--surface)); --border-bright: color-mix(in srgb, var(--accent-2) 65%, var(--surface)); }
 :root[data-style="deep"] body { background: radial-gradient(ellipse at 75% 0%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 55rem), var(--bg); }
 :root[data-style="deep"] body::before { background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 18%, transparent) .6px, transparent 1px), radial-gradient(circle, color-mix(in srgb, var(--accent) 15%, transparent) .7px, transparent 1px); background-size: 113px 127px, 179px 211px; background-position: 21px 53px, 61px 11px; mask-image: linear-gradient(var(--bg), transparent 80%); }
 :root[data-style="deep"] .scene-grid { display: none; }
-:root[data-style="deep"] .reactor { transform: rotate(-35deg); }
+:root[data-style="deep"] .reactor { transform: rotateX(var(--scene-pitch, 0deg)) rotateY(var(--scene-yaw, 0deg)) rotateZ(-35deg) translateZ(var(--scene-depth, 0px)); }
 :root[data-style="deep"] .reactor-ring { border-style: solid; }
 :root[data-style="deep"] .reactor-core { border-radius: 50%; transform: scale(.65); }
 :root[data-style="deep"] .reactor-core::before, :root[data-style="deep"] .reactor-core::after { display: none; }
@@ -36,3 +38,145 @@
 :root[data-style="deep"] .post-card:hover { box-shadow: 0 12px 30px color-mix(in srgb, var(--accent-2) 6%, transparent); }
 :root[data-style="deep"] .hero-title { letter-spacing: -.07em; font-weight: 550; }
 :root[data-style="deep"] .appearance-popover { border-radius: 14px; }
+/* Luxury is opt-in. It enriches the frame and interaction without moving text. */
+@property --rim-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+:root[data-luxury="on"] { --glow: color-mix(in srgb, var(--accent) 25%, transparent); --glow-blue: color-mix(in srgb, var(--accent-2) 15%, transparent); }
+:root[data-luxury="on"] body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 10% 15%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 45%), radial-gradient(ellipse at 85% 55%, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 45%); background-size: 150% 150%; animation: atmosphere-drift 24s ease-in-out infinite alternate; }
+:root[data-luxury="on"] .site-header { border-bottom-color: var(--accent); box-shadow: 0 1px 22px color-mix(in srgb, var(--accent) 16%, transparent); }
+:root[data-luxury="on"] .brand-mark { box-shadow: 0 0 14px var(--glow), inset 0 0 12px var(--glow-blue); }
+:root[data-luxury="on"] .hero-visual { opacity: 1; }
+:root[data-luxury="on"] .hero-visual::after { content: ""; position: absolute; inset: 4% 8%; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--accent-2) 50%, transparent); border-top-color: var(--accent); border-bottom-color: var(--accent); box-shadow: 0 0 35px var(--glow-blue), inset 0 0 25px var(--glow-blue); animation: instrument-orbit 28s linear infinite; pointer-events: none; }
+:root[data-luxury="on"] .reactor { filter: drop-shadow(0 0 7px var(--glow)); }
+:root[data-luxury="on"] .reactor-ring { border-color: color-mix(in srgb, var(--accent) 48%, transparent); animation: instrument-orbit 22s linear infinite; }
+:root[data-luxury="on"] .ring-two { animation-duration: 31s; animation-direction: reverse; border-color: color-mix(in srgb, var(--accent-2) 60%, transparent); }
+:root[data-luxury="on"] .ring-three { animation-duration: 16s; }
+:root[data-luxury="on"] .reactor-core { box-shadow: 0 0 24px var(--glow), inset 0 0 12px var(--glow); }
+:root[data-luxury="on"] .light-trail { display: block; opacity: .8; animation: instrument-trace 6s ease-in-out infinite alternate; }
+:root[data-luxury="on"] .trail-two { animation-delay: -2s; }
+:root[data-luxury="on"] .trail-three { animation-delay: -4s; }
+:root[data-luxury="on"] .post-card { border: 1px solid transparent; padding: 1.8rem; border-radius: var(--radius); background: linear-gradient(var(--surface), var(--surface)) padding-box, conic-gradient(from var(--rim-angle), var(--accent), var(--border) 22%, var(--accent-2) 48%, var(--border) 74%, var(--accent)) border-box; animation: rim-orbit 10s linear infinite; box-shadow: 0 8px 35px var(--glow-blue); }
+:root[data-luxury="on"] .post-card::before { display: block; width: 25%; background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2)); animation: corner-travel 8s ease-in-out infinite alternate; }
+:root[data-luxury="on"] .post-card::after { display: block; border-color: var(--accent); width: 14px; height: 14px; }
+:root[data-luxury="on"] .post-card:hover, :root[data-luxury="on"] .post-card:focus-within { box-shadow: 0 8px 35px var(--glow-blue), 0 0 18px var(--glow); }
+:root[data-luxury="on"] .signal-strip { border-color: var(--border-bright); box-shadow: 0 1px 16px var(--glow-blue); }
+:root[data-luxury="on"] .section-heading h2, :root[data-luxury="on"] .prose h2 { text-shadow: 0 0 24px var(--glow-blue); }
+:root[data-luxury="on"] .appearance-popover { border-color: var(--accent); box-shadow: var(--shadow), 0 0 28px var(--glow-blue); }
+:root[data-luxury="on"] .site-footer { border-image: linear-gradient(90deg, var(--accent), var(--accent-2), var(--border)) 1; }
+[data-luxury-surface="true"]:not(.skip-link) { position: relative; isolation: isolate; overflow: hidden; }
+:root[data-luxury="on"] [data-luxury-surface="true"]:not(.skip-link):not(.post-card, .appearance-popover, .signal-strip, .article-toc, pre):hover { background-image: radial-gradient(circle at var(--pointer-x, 50%) var(--pointer-y, 50%), color-mix(in srgb, var(--accent) 14%, transparent), transparent 75%); box-shadow: 0 0 20px var(--glow); border-color: var(--accent); }
+:root[data-luxury="on"][data-mode="day"] [data-luxury-surface="true"]:not(.skip-link):not(.post-card, .appearance-popover, .signal-strip, .article-toc, pre):hover { background-image: radial-gradient(circle at var(--pointer-x, 50%) var(--pointer-y, 50%), color-mix(in srgb, var(--accent) 7%, transparent), transparent 75%); }
+.luxury-ripple { position: absolute; z-index: -1; width: 1rem; height: 1rem; margin: -.5rem; border-radius: 50%; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; animation: touch-ripple .7s ease-out both; }
+@media (hover: hover) and (pointer: fine) {
+  :root[data-luxury="on"]:not([data-motion="reduced"]) [data-luxury-surface="true"]:not(.skip-link):hover { transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)); }
+}
+@keyframes rim-orbit { to { --rim-angle: 360deg; } }
+@keyframes atmosphere-drift { from { background-position: 0 0; } to { background-position: 70% 60%; } }
+@keyframes corner-travel { from { left: 0; } to { left: 75%; } }
+@keyframes instrument-trace { from { transform: translateX(-20%); } to { transform: translateX(45%); } }
+@keyframes touch-ripple { from { opacity: .7; transform: scale(.2); } to { opacity: 0; transform: scale(16); } }
+/* Full-page luxury: projected atmosphere, refractive panels and living type. */
+@property --text-float { syntax: "<length>"; inherits: false; initial-value: 0px; }
+.luxury-atmosphere { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Keep the viewport-fixed reading bar outside transformed/stacked containers. */
+:root[data-luxury="on"] main { position: relative; }
+:root[data-luxury="on"] main > :not(.reading-progress) { position: relative; z-index: 1; }
+:root[data-luxury="on"] :is(.hero-content, .page-header, .prose, .post-list) { perspective: 1600px; }
+:root[data-luxury="on"] .site-footer { position: relative; z-index: 1; }
+:root[data-luxury="on"] { --glass-shimmer: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--text) 12%, transparent) 46%, color-mix(in srgb, var(--accent) 10%, transparent) 48%, transparent 59%); }
+:root[data-luxury="on"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre) {
+  background-color: color-mix(in srgb, var(--surface) 88%, transparent);
+  background-image: var(--glass-shimmer), radial-gradient(ellipse at 0% 100%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 60%), radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 65%);
+  background-size: 300% 100%, 180% 180%, 180% 180%;
+  background-position: 150% 0, 0 100%, 100% 0;
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid var(--border-bright);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 35%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--accent-2) 45%, transparent), 0 16px 50px color-mix(in srgb, var(--bg) 60%, transparent), 0 0 28px var(--glow-blue);
+  animation: glass-refraction 13s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+:root[data-luxury="on"] .post-card { animation: glass-refraction 13s ease-in-out infinite, glass-depth 8s ease-in-out infinite; }
+:root[data-luxury="on"] .post-card[data-luxury-surface="true"]:not(.skip-link):hover {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 45%, transparent), inset 0 -1px 0 var(--accent-2), 0 22px 60px color-mix(in srgb, var(--bg) 60%, transparent), 0 0 42px var(--glow);
+}
+:root[data-luxury="on"] .appearance-popover[data-luxury-surface="true"] { position: absolute; overflow-y: auto; background-color: color-mix(in srgb, var(--surface) 94%, transparent); }
+:root[data-luxury="on"] .article-toc[data-luxury-surface="true"] { position: sticky; overflow-y: auto; padding: 1.2rem; border-radius: var(--radius); }
+:root[data-luxury="on"] .prose pre[data-luxury-surface="true"] { overflow: auto; }
+:root[data-luxury="on"] [data-luxury-text="true"] {
+  position: relative;
+  transform: translate3d(var(--text-x, 0px), calc(var(--text-y, 0px) + var(--text-float)), var(--text-depth, 0px));
+  animation: living-type 7s ease-in-out infinite, type-luminance 10s ease-in-out infinite;
+  animation-delay: var(--text-phase, 0s);
+  transition: transform .18s ease-out, text-shadow .25s;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+:root[data-luxury="on"] :is(h1, h2, h3)[data-luxury-text="true"] { animation-name: living-title, title-luminance; }
+:root[data-luxury="on"] [data-luxury-text="true"]:hover { text-shadow: 0 0 18px var(--glow), 0 5px 28px var(--glow-blue); }
+:root[data-luxury="on"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre):focus-within {
+  transform: none !important;
+  animation-play-state: paused !important;
+}
+:root[data-luxury="on"][data-text-frozen="true"] [data-luxury-text="true"],
+:root[data-luxury="on"][data-text-frozen="true"] [data-luxury-surface="true"] {
+  transform: none !important;
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+:root[data-luxury="on"] [data-luxury-text="true"]:focus-within { transform: none !important; animation-play-state: paused !important; }
+@media (max-width: 48rem) {
+  :root[data-luxury="on"] .appearance-popover[data-luxury-surface="true"] { position: fixed; }
+  :root[data-luxury="on"] .article-toc[data-luxury-surface="true"] { position: static; }
+}
+@keyframes living-type { 0%, 100% { --text-float: -1px; } 50% { --text-float: 2.5px; } }
+@keyframes living-title { 0%, 100% { --text-float: -2px; } 50% { --text-float: 5px; } }
+@keyframes type-luminance { 0%, 100% { text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 5%, transparent); } 50% { text-shadow: 0 0 18px color-mix(in srgb, var(--accent-2) 22%, transparent); } }
+@keyframes title-luminance { 0%, 100% { text-shadow: -8px 0 24px var(--glow); } 50% { text-shadow: 8px 0 28px var(--glow-blue), 0 0 7px var(--glow); } }
+@keyframes glass-refraction { 0%, 100% { background-position: 150% 0, 0 100%, 100% 0; } 50% { background-position: -60% 0, 100% 60%, 0 100%; } }
+@keyframes glass-depth { 0%, 100% { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 35%, transparent), inset 0 -1px 0 var(--accent-2), 0 16px 50px color-mix(in srgb, var(--bg) 60%, transparent), 0 0 28px var(--glow-blue); } 50% { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 50%, transparent), inset 0 -1px 0 var(--accent), 0 24px 65px color-mix(in srgb, var(--bg) 65%, transparent), 0 0 40px var(--glow); } }
+/* The three visual languages have different geometry and motion, not only hues. */
+:root[data-luxury="on"][data-style="grid"] :is(.post-card, .signal-strip, .article-toc, .prose pre) {
+  border-radius: 0;
+  background-image: linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--accent) 15%, transparent) 46%, transparent 49%), repeating-linear-gradient(0deg, transparent 0 23px, color-mix(in srgb, var(--accent-2) 6%, transparent) 24px), linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 35%);
+  background-size: 300% 100%, 100% 24px, 100% 100%;
+  animation: circuit-refraction 9s linear infinite;
+  border-left-width: 2px;
+  border-right-width: 2px;
+}
+:root[data-luxury="on"][data-style="grid"] .post-card::after { width: 22px; height: 22px; border-width: 2px; border-color: var(--accent-2); }
+:root[data-luxury="on"][data-style="grid"] [data-luxury-text="true"] { animation-name: signal-type, type-luminance; animation-duration: 6s, 8s; }
+:root[data-luxury="on"][data-style="grid"] :is(h1, h2, h3)[data-luxury-text="true"]::after { content: ""; position: absolute; left: 0; bottom: -.15rem; width: 28%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2)); box-shadow: 0 0 12px var(--glow); animation: title-scan 5s ease-in-out infinite alternate; pointer-events: none; }
+:root[data-luxury="on"][data-style="deep"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre) {
+  border-radius: 22px;
+  background-image: radial-gradient(ellipse at 15% 0%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 55%), radial-gradient(ellipse at 90% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%), var(--glass-shimmer);
+  background-size: 180% 180%, 160% 160%, 300% 100%;
+  animation: nebula-refraction 17s ease-in-out infinite alternate;
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--text) 35%, transparent), 0 22px 65px color-mix(in srgb, var(--bg) 65%, transparent), 0 0 48px var(--glow-blue);
+}
+:root[data-luxury="on"][data-style="deep"] [data-luxury-text="true"] { animation-name: orbital-type, title-luminance; animation-duration: 9s, 13s; }
+:root[data-luxury="on"][data-style="deep"] .post-card::before { width: 35%; left: 32%; top: -1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 24px var(--accent); animation: stellar-edge 6s ease-in-out infinite alternate; }
+:root[data-luxury="on"][data-style="deep"] .post-card::after { border: 0; width: 4px; height: 4px; top: 14px; right: 15px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent), -12px 6px 0 -1px var(--accent-2); }
+:root[data-luxury="on"][data-style="paper"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre) {
+  border-radius: 3px 20px 3px 20px;
+  border-color: color-mix(in srgb, var(--text) 35%, var(--surface));
+  background-image: radial-gradient(ellipse at 20% 90%, transparent 30%, color-mix(in srgb, var(--accent) 6%, transparent) 34%, transparent 39%), radial-gradient(ellipse at 80% 15%, transparent 30%, color-mix(in srgb, var(--accent-2) 5%, transparent) 35%, transparent 41%), var(--glass-shimmer);
+  background-size: 190% 170%, 170% 200%, 300% 100%;
+  animation: water-refraction 12s ease-in-out infinite alternate;
+  backdrop-filter: blur(22px) saturate(125%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 15%, transparent), 6px 8px 0 color-mix(in srgb, var(--surface) 45%, transparent), 0 18px 38px color-mix(in srgb, var(--text) 15%, transparent);
+}
+:root[data-luxury="on"][data-style="paper"] [data-luxury-text="true"] { animation-name: paper-type, type-luminance; animation-duration: 11s, 15s; }
+:root[data-luxury="on"][data-style="paper"] .post-card::before { top: 0; left: 0; width: 2px; height: 65%; background: linear-gradient(transparent, var(--accent), transparent); animation: ink-edge 9s ease-in-out infinite alternate; }
+:root[data-luxury="on"][data-style="paper"] .post-card::after { border: 0; width: 32px; height: 1px; top: 15px; right: 16px; background: var(--accent-2); opacity: .6; transform: rotate(-7deg); }
+:root[data-luxury="on"][data-mode="day"] .luxury-atmosphere { mix-blend-mode: multiply; }
+:root[data-luxury="on"][data-mode="night"] .luxury-atmosphere { mix-blend-mode: screen; }
+:root[data-luxury="on"][data-mode="day"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre) { background-color: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(20px) saturate(160%); }
+:root[data-luxury="on"][data-mode="night"] :is(.appearance-popover, .post-card, .signal-strip, .article-toc, .prose pre) { background-color: color-mix(in srgb, var(--surface) 88%, transparent); }
+:root[data-text-frozen="true"] [data-luxury-text="true"]::after { animation-play-state: paused !important; }
+@keyframes circuit-refraction { from { background-position: 150% 0, 0 0, 0 0; } to { background-position: -150% 0, 0 48px, 0 0; } }
+@keyframes signal-type { 0%, 100% { --text-float: 0px; } 25%, 75% { --text-float: -1.5px; } 50% { --text-float: 1.5px; } }
+@keyframes title-scan { from { left: 0; } to { left: 72%; } }
+@keyframes nebula-refraction { from { background-position: 0 0, 100% 100%, 150% 0; } to { background-position: 100% 65%, 0 25%, -150% 0; } }
+@keyframes orbital-type { 0%, 100% { --text-float: -2px; } 50% { --text-float: 4px; } }
+@keyframes stellar-edge { from { opacity: .45; transform: scaleX(.5); } to { opacity: 1; transform: scaleX(1.6); } }
+@keyframes water-refraction { from { background-position: 0 100%, 100% 0, 150% 0; } to { background-position: 100% 25%, 0 90%, -150% 0; } }
+@keyframes paper-type { 0%, 100% { --text-float: 0px; } 40% { --text-float: -2px; } 70% { --text-float: 1px; } }
+@keyframes ink-edge { from { transform: translateY(-10%); opacity: .5; } to { transform: translateY(45%); opacity: 1; } }
