@@ -55,6 +55,8 @@ try {
     $processFixture = Join-Path $testRoot 'process.ps1'
     Set-Content -LiteralPath $processFixture -Value @'
 param([string]$Value)
+# Match the UTF-8 producer contract used by publish.ps1 on windowless Windows.
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 [Console]::Out.Write($Value)
 [Console]::Error.Write('錯誤訊息')
 exit 7
