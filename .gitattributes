@@ -1,0 +1,5 @@
+# Preserve the reviewed snapshot bytes on Windows and Linux.
+/AGENTS.md text eol=lf
+/CLAUDE.md -text
+/wf/** text eol=lf
+/wf/LICENSE.workflows-CC0.txt -text

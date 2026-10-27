@@ -14,7 +14,7 @@
 <link rel="alternate" type="{{ .MediaType.Type }}" title="{{ $.Site.Title }}" href="{{ .Permalink }}">
 {{ end }}
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
-{{- with resources.Get "css/site.css" }}
+{{- with partialCached "styles.html" . }}
 <link rel="stylesheet" href="{{ .RelPermalink }}">
 {{- end }}
 <meta property="og:type" content="{{ if and .IsPage (eq .Section "posts") }}article{{ else }}website{{ end }}">

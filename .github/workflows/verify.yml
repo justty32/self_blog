@@ -26,9 +26,21 @@ jobs:
           path: .hugo-tool-cache
           key: ${{ runner.os }}-hugo-165-${{ hashFiles('scripts/Hugo-165.psd1') }}
 
+      - name: Verify workflow snapshot
+        shell: pwsh
+        run: ./scripts/verify-workflow-snapshot.ps1
+
+      - name: Test workflow snapshot checks
+        shell: pwsh
+        run: ./scripts/test-workflow-snapshot.ps1
+
       - name: Test automation scripts
         shell: pwsh
         run: ./scripts/test-automation.ps1
+
+      - name: Test site validation
+        shell: pwsh
+        run: ./scripts/test-site-validation.ps1
 
       - name: Build and verify
         shell: pwsh

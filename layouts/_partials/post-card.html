@@ -10,10 +10,6 @@
   <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
   {{ end }}
   <p>{{ .Description }}</p>
-  {{ with .GetTerms "tags" }}
-  <ul class="tags" aria-label="標籤">
-    {{ range . }}<li><a class="tag" href="{{ .RelPermalink }}">#{{ .LinkTitle }}</a></li>{{ end }}
-  </ul>
-  {{ end }}
+  {{ partial "post-tags.html" . }}
 </article>
 {{- end -}}

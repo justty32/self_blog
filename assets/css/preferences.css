@@ -1,0 +1,17 @@
+@media (max-width: 42rem) {
+  .nav { align-items: flex-start; flex-direction: column; padding-block: .9rem; }
+  .archive-list li { grid-template-columns: 1fr; gap: 0; }
+}
+
+@media (prefers-color-scheme: light) {
+  :root { color-scheme: light; --bg: #f3fbfa; --surface: #fff; --surface-2: #e6f7f4; --text: #0b2830; --muted: #526d72; --accent: #087f70; --accent-2: #116d8f; --border: #b9d9d5; --code: #e8f3f2; --shadow: 0 16px 40px rgb(14 64 70 / 10%); }
+  body { background: radial-gradient(circle at 15% 0%, rgb(57 230 207 / 13%), transparent 35rem), var(--bg); }
+  .site-header { background: rgb(243 251 250 / 90%); }
+  :root { --card-background: linear-gradient(145deg, #fff, #e6f7f4); }
+  a:hover { color: #056457; }
+  .button.primary { color: white; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

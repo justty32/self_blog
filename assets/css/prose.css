@@ -1,0 +1,11 @@
+.prose { max-width: 48rem; font-size: 1.04rem; }
+.prose > * + * { margin-top: 1.25em; }
+.prose h2, .prose h3 { margin-top: 2.2em; scroll-margin-top: 6rem; }
+.prose blockquote { margin-inline: 0; padding: .4rem 1.2rem; border-left: 3px solid var(--accent); color: var(--muted); }
+.prose code { padding: .15em .38em; border-radius: 5px; background: var(--code); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .9em; }
+.prose pre { overflow-x: auto; padding: 1.15rem; border: 1px solid var(--border); border-radius: 10px; background: var(--code); }
+.prose pre code { padding: 0; background: transparent; }
+.prose img { display: block; max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; }
+.prose table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.prose th, .prose td { padding: .55rem .8rem; border: 1px solid var(--border); text-align: start; }
+.prose th { background: var(--surface-2); }

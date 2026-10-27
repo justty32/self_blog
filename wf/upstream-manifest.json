@@ -1,0 +1,226 @@
+{
+  "schema": "workflow-snapshot/1",
+  "upstream": {
+    "remote": "https://github.com/justty32/workflows.git",
+    "commit": "368468a0cda612ffeb4d70bb72f39e765ed73327",
+    "license": {
+      "source": "LICENSE",
+      "destination": "wf/LICENSE.workflows-CC0.txt",
+      "sha256": "65d5fc6631d23cc6da9414b5e52f1fd88b6c6d90263b61466c3d93ef00a018b4"
+    }
+  },
+  "sources": [
+    {
+      "source": "template/AGENTS.md",
+      "blob": "714b9b06226d8c03b660e4b80b28b01112359551",
+      "destination": "AGENTS.md",
+      "transformation": "copy + prune/project/link adaptation; clear live state where applicable"
+    },
+    {
+      "source": "template/CLAUDE.md",
+      "blob": "902542c069030ea14308badbc75e876e6f08c426",
+      "destination": "CLAUDE.md",
+      "transformation": "exact copy"
+    },
+    {
+      "source": "template/INDEX.md",
+      "blob": "95217d822314bfb6b307f8f4f09e17ceb879128b",
+      "destination": "wf/INDEX.md",
+      "transformation": "copy + prune/project/link adaptation; clear live state where applicable"
+    },
+    {
+      "source": "template/WORKFLOWS.md",
+      "blob": "29bdeaa63e5f5c61aff3bb151721eb76b6a49c1c",
+      "destination": "wf/WORKFLOWS.md",
+      "transformation": "copy + prune/project/link adaptation; clear live state where applicable"
+    },
+    {
+      "source": "template/SESSION-LOG.md",
+      "blob": "e1a0b634d3a1db198c194a6d9896fccd953a3ad8",
+      "destination": "wf/SESSION-LOG.md",
+      "transformation": "copy + prune/project/link adaptation; clear live state where applicable"
+    },
+    {
+      "source": "template/WAIT_USER.md",
+      "blob": "5139196e2e4a41c217d87b87634fbb6fdd85e517",
+      "destination": "wf/WAIT_USER.md",
+      "transformation": "copy + prune/project/link adaptation; clear live state where applicable"
+    },
+    {
+      "source": "template/workflows/common/README.md",
+      "blob": "02838665f576ca449de2a80215a87a20e441ef5e",
+      "destination": "wf/workflows/common/README.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "template/workflows/common/gotchas.md",
+      "blob": "103cb0c9eafcb55c16c4fcd8c81cc1538784c77a",
+      "destination": "wf/workflows/common/gotchas.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "template/workflows/common/user.md",
+      "blob": "34f69c83f376b466fcb1a8981ba9f8417607e8d3",
+      "destination": "wf/workflows/common/user.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "template/workflows/common/reply-style.md",
+      "blob": "6c394452254fcd5a50abcca2c493c42ff1b2673b",
+      "destination": "wf/workflows/common/reply-style.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/workflows/feature-dev/README.md",
+      "blob": "933896cb6841f5cdf284f04f3e0331aec117ebc8",
+      "destination": "wf/workflows/feature-dev/README.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/workflows/testing.md",
+      "blob": "7674a06c1d2a350ba9e02074894530c90717c669",
+      "destination": "wf/workflows/testing.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/workflows/dev-env.md",
+      "blob": "30c3c8d5c708e371c62c9a63d942e85df4737caf",
+      "destination": "wf/workflows/dev-env.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/workflows/common/conventions.md",
+      "blob": "05ee52c5b6dde183f74ada76a45063365de17816",
+      "destination": "wf/workflows/common/conventions.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/workflows/common/code-map.md",
+      "blob": "4b35f297dff4aaf352e58c3611986d784f642b45",
+      "destination": "wf/workflows/common/code-map.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/knowledge/workflows/write.md",
+      "blob": "aaabe7c7a923ac3d228aa3c428b568c46f86c358",
+      "destination": "wf/workflows/write.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/knowledge/workflows/common/writing.md",
+      "blob": "a494664352c4f603ee5df07f0d8f02aa014df3a8",
+      "destination": "wf/workflows/common/writing.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/knowledge/workflows/common/writing/zh-tw.md",
+      "blob": "4e131394899a90b8ce35c91b75c05523c9cac1bd",
+      "destination": "wf/workflows/common/writing/zh-tw.md",
+      "transformation": "copy + prune/project/link adaptation"
+    },
+    {
+      "source": "flavors/dev/WORKFLOWS.dev.md",
+      "blob": "7fae756807cf03dd049abd26aea4b4a9e98fb374",
+      "destination": "wf/WORKFLOWS.md",
+      "transformation": "merge selected feature-dev/testing/dev-env dispatch rows and shared conventions intro"
+    },
+    {
+      "source": "flavors/knowledge/WORKFLOWS.knowledge.md",
+      "blob": "b7d184d71f19775ec55aeda7f209f906d1325c93",
+      "destination": "wf/WORKFLOWS.md",
+      "transformation": "merge write dispatch row only"
+    },
+    {
+      "source": "LICENSE",
+      "blob": "2e95679e399e5390ca895c8e40d717441946b1d2",
+      "destination": "wf/LICENSE.workflows-CC0.txt",
+      "transformation": "exact copy"
+    }
+  ],
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "ef0722e46ee2ef1272f6bc7fda416aa09228745bd60cad33acd42d2b26639f6a"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "2acf869e107933aa7cd1c6988b6bf37b87983ec7c226ce30109e610ed3da8878"
+    },
+    {
+      "path": "wf/INDEX.md",
+      "sha256": "d987718e07c70c8f2e15a1f5c479f6679254154b804940ff72043488db21d315"
+    },
+    {
+      "path": "wf/LICENSE.workflows-CC0.txt",
+      "sha256": "65d5fc6631d23cc6da9414b5e52f1fd88b6c6d90263b61466c3d93ef00a018b4"
+    },
+    {
+      "path": "wf/SESSION-LOG.md",
+      "sha256": "c8c10c17bc524b65c52a88d08e9c43e054e409ff284d7497492b901fecc9900c",
+      "mutable": true
+    },
+    {
+      "path": "wf/UPSTREAM.md",
+      "sha256": "62ef46b6b23cfab96ba8ad3fe1edc92023331151b6ab1b3c92c15fb23d872a0c"
+    },
+    {
+      "path": "wf/WAIT_USER.md",
+      "sha256": "65b5f46ba5c1ad1f57486137f8cb79aedbafcaf8b3d97df05feb1cf7551a5775",
+      "mutable": true
+    },
+    {
+      "path": "wf/WORKFLOWS.md",
+      "sha256": "9969e1f8170b9d9f3a9e713b8ce2f16d58daf90c48f01d06aad4f1d63ea5cf9c"
+    },
+    {
+      "path": "wf/workflows/common/README.md",
+      "sha256": "48adca871a99be341cd24fe6ed3fc27fd03077d03749bd9db4ced135806cbf86"
+    },
+    {
+      "path": "wf/workflows/common/code-map.md",
+      "sha256": "bbc92074077304cb395580b43c0ca8702958515ab1d14cdca4e71ea453cf27e9"
+    },
+    {
+      "path": "wf/workflows/common/conventions.md",
+      "sha256": "f91e7d6f8309a42f87eb44253c5a4f8ff557f8e725c901792f873af86776ac57"
+    },
+    {
+      "path": "wf/workflows/common/gotchas.md",
+      "sha256": "4a7b3c14791c9eddce10131e6392af0d3ff41de71034788d01e7be12f940e15f",
+      "mutable": true
+    },
+    {
+      "path": "wf/workflows/common/reply-style.md",
+      "sha256": "86d5904d62354b2ce7f2f6bc9aa6c1e8be17c320a70a9708ddde794114f723ea"
+    },
+    {
+      "path": "wf/workflows/common/user.md",
+      "sha256": "80f03a53f00753f0a9ed7029c133429902534170ea491fcd39d986de2b9ad568",
+      "mutable": true
+    },
+    {
+      "path": "wf/workflows/common/writing/zh-tw.md",
+      "sha256": "cff26c0fbb48d2d20a0b92551bbe7090dd30c373975fd2b5ce283bb2a814793f"
+    },
+    {
+      "path": "wf/workflows/common/writing.md",
+      "sha256": "fd181ec61377b3e1d9297baaefccd98b7b77c133b1d9e51a977ffd389e538ab4"
+    },
+    {
+      "path": "wf/workflows/dev-env.md",
+      "sha256": "feb7a80047d500189c56533e0b11a4333d41a82e26ccd3deee9b3d15f0810514"
+    },
+    {
+      "path": "wf/workflows/feature-dev/README.md",
+      "sha256": "baf4271ea9bbf35fc9076de7c2f5bb6630576c56878d6a4f506899eb1b1c5148"
+    },
+    {
+      "path": "wf/workflows/testing.md",
+      "sha256": "20712d7b71cb3876e9db487f5af9740c435767b0f55864f3722eb16c6a93b093"
+    },
+    {
+      "path": "wf/workflows/write.md",
+      "sha256": "e5c4a96c4f8cad32e0458eecd2fe3c0169864b47968372339b6d0a9937f87e26"
+    }
+  ]
+}

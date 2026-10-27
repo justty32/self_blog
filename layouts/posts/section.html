@@ -1,9 +1,5 @@
 {{ define "main" }}
-<header class="page-header">
-  <p class="eyebrow">All posts</p>
-  <h1>{{ .Title }}</h1>
-  {{ with .Description }}<p class="page-description">{{ . }}</p>{{ end }}
-</header>
+{{ partial "page-header.html" (dict "eyebrow" "All posts" "title" .Title "description" .Description) }}
 {{ $posts := partial "published-posts.html" . }}
 <div class="post-list">
   {{ range $posts }}{{ partial "post-card.html" (dict "page" .) }}{{ else }}<p class="empty">目前沒有文章。</p>{{ end }}

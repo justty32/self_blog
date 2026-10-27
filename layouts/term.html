@@ -1,9 +1,5 @@
 {{ define "main" }}
-<header class="page-header">
-  <p class="eyebrow">Tagged</p>
-  <h1>#{{ .Title }}</h1>
-  <p class="page-description">共 {{ len .Pages }} 篇文章。</p>
-</header>
+{{ partial "page-header.html" (dict "eyebrow" "Tagged" "title" (printf "#%s" .Title) "description" (printf "共 %d 篇文章。" (len .Pages))) }}
 <div class="post-list">
   {{ range .Pages.ByDate.Reverse }}{{ partial "post-card.html" (dict "page" .) }}{{ end }}
 </div>

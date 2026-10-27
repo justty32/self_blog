@@ -7,6 +7,7 @@ publishDir = "public"
 relativeURLs = false
 canonifyURLs = false
 noBuildLock = true
+enableRobotsTXT = true
 
 [params]
   description = "程式、工具與日常實作筆記。"
@@ -41,3 +42,29 @@ noBuildLock = true
 [security.http]
   urls = []
   methods = []
+
+# Main navigation; pageRef follows Hugo page routes.
+[[menus.main]]
+  name = "文章"
+  pageRef = "/posts"
+  weight = 10
+
+[[menus.main]]
+  name = "標籤"
+  pageRef = "/tags"
+  weight = 20
+
+[[menus.main]]
+  name = "月份"
+  pageRef = "/archive"
+  weight = 30
+
+[[menus.main]]
+  name = "關於"
+  pageRef = "/about"
+  weight = 40
+
+[[menus.main]]
+  name = "聯絡"
+  pageRef = "/contact"
+  weight = 50

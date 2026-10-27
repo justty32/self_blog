@@ -45,7 +45,7 @@ package-manager 安裝均不符合此 gate。官方來源：[Hugo v0.165.0 relea
 
 - Pages artifact 不得包含 Hugo、npm、theme、module、source dependency 或未引用素材。
 - build 後檢查輸出不得含 client `<script>`、第三方 origin、遠端資源或意外檔案；讀者取得的是普通 HTML、CSS 與圖片。
-- workflows upstream 授權 blocker 保留：commit `7e7d20bb4d30271f8369acad5f85a267d66e9be1` 缺少 LICENSE、SPDX 或 copyright notice。在 upstream 提供完整授權並產生可 pin 的新 commit 前，不得複製或導入該 workflows。
+- workflows 精簡快照固定於 `368468a0cda612ffeb4d70bb72f39e765ed73327`，核心來源採 CC0-1.0（既有 permissive allowlist 允許）；原始全文保存在 [LICENSE.workflows-CC0.txt](../../wf/LICENSE.workflows-CC0.txt)，逐檔來源見 [UPSTREAM.md](../../wf/UPSTREAM.md)。不包含另有授權的 skills；舊缺授權 commit 不作為導入來源。
 
 ## 交付文件
 

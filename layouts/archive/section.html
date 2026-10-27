@@ -1,9 +1,5 @@
 {{ define "main" }}
-<header class="page-header">
-  <p class="eyebrow">By month</p>
-  <h1>{{ .Title }}</h1>
-  {{ with .Description }}<p class="page-description">{{ . }}</p>{{ end }}
-</header>
+{{ partial "page-header.html" (dict "eyebrow" "By month" "title" .Title "description" .Description) }}
 {{ $posts := partial "published-posts.html" . }}
 <div class="archive">
   {{ range $posts.GroupByDate "2006-01" }}

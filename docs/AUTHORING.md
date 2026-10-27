@@ -1,5 +1,7 @@
 # 寫作與發布指南
 
+[文件入口](README.md)｜[網站架構](ARCHITECTURE.md)
+
 這個網站的日常流程是：新增 Markdown → 本機預覽 → 執行一個發布指令 → GitHub Actions 自動部署。
 
 ## 第一次準備
@@ -7,7 +9,7 @@
 目前自動下載工具支援 Windows 與 Linux 的 x86-64（amd64）。兩個平台都需要：
 
 - Git
-- PowerShell 7（`pwsh`）
+- PowerShell 7（`pwsh`）；Linux 解壓 tar 需要 PowerShell 7.3／.NET 7 以上
 - 網路連線；`scripts/get-hugo.ps1` 會下載並驗證固定的 Hugo v0.165.0，不需要 npm 或 Node
 
 Linux 同樣使用 PowerShell 7，請先確認 `pwsh --version` 可執行；`.ps1` 指令應由 `pwsh` 執行，不要交給 Bash。ARM64 目前不在自動下載工具的支援範圍。
@@ -94,7 +96,16 @@ description: 我做過的東西
 頁面內容。
 ```
 
-若要讓新頁面出現在頂部導覽，再編輯 `layouts/_partials/header.html` 加一個連結。一般頁面不必加入 tags 或 date。
+若要讓新頁面出現在頂部導覽，在 `hugo.toml` 新增一筆：
+
+```toml
+[[menus.main]]
+  name = "專案"
+  pageRef = "/projects"
+  weight = 60
+```
+
+`weight` 控制順序。一般頁面不必加入 tags 或 date。
 
 ## 本機預覽
 
@@ -113,7 +124,7 @@ $hugo = ./scripts/get-hugo.ps1
 ./scripts/verify.ps1
 ```
 
-產物位於 ignored 的 `public/`，不要提交它。
+產物位於 ignored 的 `public/`，不要提交它。預設檢查即使已有 Hugo 快取仍需連網核對 checksum；離線時使用 `./scripts/verify.ps1 -HugoPath <已驗證的 Hugo binary>`。
 
 從 Linux Bash 執行檢查：
 

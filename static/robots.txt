@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://justty32.github.io/self_blog/sitemap.xml

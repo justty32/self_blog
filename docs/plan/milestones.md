@@ -2,6 +2,8 @@
 
 ← [規劃入口](README.md)｜[架構](architecture.md)｜[部署](deployment.md)｜[workflows 導入](workflow-import.md)｜[授權](licensing.md)
 
+2026-10-27 更新：workflows 已採 CC0-1.0 的 pinned snapshot 完成非侵入式導入，現行範圍與驗收見 [workflows 導入](workflow-import.md)。下列 Deferred 條款保留為條件式驗收規則。
+
 本版正式方案改為 Hugo v0.165.0 standard、無 npm、無 Mermaid、無 client JS、無
 theme／遠端 module。既有 Astro／Mermaid spike 保留作歷史研究，不是 production
 site 依賴；流程圖是因 MVP 沒有實際需求而排除，不代表 D2／Graphviz 等原生 binary

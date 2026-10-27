@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -16,6 +14,9 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      pages: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,9 +31,21 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
+      - name: Verify workflow snapshot
+        shell: pwsh
+        run: ./scripts/verify-workflow-snapshot.ps1
+
+      - name: Test workflow snapshot checks
+        shell: pwsh
+        run: ./scripts/test-workflow-snapshot.ps1
+
       - name: Test automation scripts
         shell: pwsh
         run: ./scripts/test-automation.ps1
+
+      - name: Test site validation
+        shell: pwsh
+        run: ./scripts/test-site-validation.ps1
 
       - name: Build and verify
         shell: pwsh

@@ -1,0 +1,9 @@
+{{- /* Keep cascade order explicit and publish one stylesheet at the stable URL. */ -}}
+{{- $styles := slice
+  (resources.Get "css/base.css")
+  (resources.Get "css/layout.css")
+  (resources.Get "css/components.css")
+  (resources.Get "css/prose.css")
+  (resources.Get "css/preferences.css")
+-}}
+{{- return ($styles | resources.Concat "css/site.css") -}}

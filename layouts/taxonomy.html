@@ -1,10 +1,7 @@
 {{ define "main" }}
-<header class="page-header">
-  <p class="eyebrow">Taxonomy</p>
-  <h1>{{ .Title }}</h1>
-  <p class="page-description">依{{ if eq .Data.Plural "categories" }}分類{{ else }}標籤{{ end }}找到相關文章。</p>
-</header>
+{{ $taxonomyLabel := cond (eq .Data.Plural "categories") "分類" "標籤" }}
+{{ partial "page-header.html" (dict "eyebrow" "Taxonomy" "title" .Title "description" (printf "依%s找到相關文章。" $taxonomyLabel)) }}
 <div class="term-grid">
-  {{ range .Data.Terms.Alphabetical }}<a href="{{ .Page.RelPermalink }}">#{{ .Page.LinkTitle }} · {{ .Count }}</a>{{ else }}<p class="empty">目前沒有{{ if eq .Data.Plural "categories" }}分類{{ else }}標籤{{ end }}。</p>{{ end }}
+  {{ range .Data.Terms.Alphabetical }}<a href="{{ .Page.RelPermalink }}">#{{ .Page.LinkTitle }} · {{ .Count }}</a>{{ else }}<p class="empty">目前沒有{{ $taxonomyLabel }}。</p>{{ end }}
 </div>
 {{ end }}
