@@ -1,0 +1,38 @@
+/* Preset seeds come exclusively from data/appearance.toml via the head partial. */
+:root[data-style="paper"] { color-scheme: light; --radius: 2px; --shadow: 0 12px 35px color-mix(in srgb, var(--seed-text) 5%, transparent); --border: color-mix(in srgb, var(--seed-text) 15%, var(--bg)); --border-bright: color-mix(in srgb, var(--seed-primary) 40%, var(--bg)); }
+:root[data-style="paper"] body { background: var(--bg); }
+:root[data-style="paper"] body::before { display: none; }
+:root[data-style="paper"] .hero-title, :root[data-style="paper"] .page-header h1 { font-family: Georgia, "Noto Serif TC", "Songti TC", serif; font-weight: 500; letter-spacing: -.055em; }
+:root[data-style="paper"] .hero-title-accent { color: var(--text); text-shadow: none; }
+:root[data-style="paper"] .hero-status { padding: 0; border: 0; background: transparent; color: var(--muted); }
+:root[data-style="paper"] .status-dot { box-shadow: none; }
+:root[data-style="paper"] .brand-mark { transform: none; box-shadow: none; border-color: var(--border); }
+:root[data-style="paper"] .hero-visual { opacity: .6; }
+:root[data-style="paper"] .reactor-ring { animation: none; }
+:root[data-style="paper"] .scene-grid, :root[data-style="paper"] .light-trail { display: none; }
+:root[data-style="paper"] .reactor { transform: rotate(-23deg) scale(.84); }
+:root[data-style="paper"] .reactor-core { background: transparent; }
+:root[data-style="paper"] .post-list { grid-template-columns: 1fr; gap: 0; }
+:root[data-style="paper"] .post-card { min-height: 0; padding: 1.8rem 0; border: 0; border-top: 1px solid var(--border); border-radius: 0; background: transparent; box-shadow: none; }
+:root[data-style="paper"] .post-card:hover, :root[data-style="paper"] .post-card:focus-within { transform: none; box-shadow: none; }
+:root[data-style="paper"] .post-card::before, :root[data-style="paper"] .post-card::after { display: none; }
+:root[data-style="paper"] .post-card h2, :root[data-style="paper"] .post-card h3 { font-family: Georgia, "Noto Serif TC", serif; font-weight: 500; }
+:root[data-style="paper"] .button { box-shadow: none; }
+:root[data-style="paper"] .signal-value { font-family: Georgia, serif; color: var(--text); }
+:root[data-style="paper"] .prose { line-height: 2; }
+:root[data-style="paper"] .prose h2 { border: 0; }
+:root[data-style="paper"] .tag { border-color: transparent; padding-left: 0; }
+:root[data-style="deep"] { --radius: 16px; --border: color-mix(in srgb, var(--accent-2) 19%, var(--surface)); --border-bright: color-mix(in srgb, var(--accent-2) 45%, var(--surface)); }
+:root[data-style="deep"] body { background: radial-gradient(ellipse at 75% 0%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 55rem), var(--bg); }
+:root[data-style="deep"] body::before { background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 18%, transparent) .6px, transparent 1px), radial-gradient(circle, color-mix(in srgb, var(--accent) 15%, transparent) .7px, transparent 1px); background-size: 113px 127px, 179px 211px; background-position: 21px 53px, 61px 11px; mask-image: linear-gradient(var(--bg), transparent 80%); }
+:root[data-style="deep"] .scene-grid { display: none; }
+:root[data-style="deep"] .reactor { transform: rotate(-35deg); }
+:root[data-style="deep"] .reactor-ring { border-style: solid; }
+:root[data-style="deep"] .reactor-core { border-radius: 50%; transform: scale(.65); }
+:root[data-style="deep"] .reactor-core::before, :root[data-style="deep"] .reactor-core::after { display: none; }
+:root[data-style="deep"] .brand-mark { border-radius: 50%; transform: none; box-shadow: none; }
+:root[data-style="deep"] .hero-status, :root[data-style="deep"] .appearance-trigger { border-radius: 999px; }
+:root[data-style="deep"] .post-card::before, :root[data-style="deep"] .post-card::after { display: none; }
+:root[data-style="deep"] .post-card:hover { box-shadow: 0 12px 30px color-mix(in srgb, var(--accent-2) 6%, transparent); }
+:root[data-style="deep"] .hero-title { letter-spacing: -.07em; font-weight: 550; }
+:root[data-style="deep"] .appearance-popover { border-radius: 14px; }

@@ -10,7 +10,8 @@
 |------|------|
 | [content](../content/) | Markdown 文章、一般頁面及文章圖片 |
 | [layouts](../layouts/) | 自有 Hugo 頁面、共用片段與 Markdown render hooks |
-| [assets](../assets/) | 網站 CSS |
+| [assets](../assets/) | 網站 CSS、偏好控制器與選擇性沉浸互動 |
+| [data](../data/) | 各視覺風格的基準色彩設定 |
 | [static](../static/) | favicon 與社群預覽圖 |
 | [hugo.toml](../hugo.toml) | 網站網址、語系、路由與安全設定 |
 | [scripts](../scripts/) | Hugo 取得、建置驗證、腳本測試與發布 |

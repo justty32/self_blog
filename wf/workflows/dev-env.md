@@ -6,7 +6,7 @@ fresh clone、換機器或找指令時使用。完整作者流程見 [AUTHORING]
 
 ## 環境
 
-Git 與 PowerShell 7 是必要工具；Linux tar 解壓需 PowerShell 7.3／.NET 7 以上。現有自動下載腳本支援 Windows／Linux amd64，依 [Hugo-165.psd1](../../scripts/Hugo-165.psd1) 固定 Hugo v0.165.0 Standard 並驗證 checksum；不用 npm、Node、theme 或 submodule。
+Git 與 PowerShell 7 是必要工具；Linux tar 解壓需 PowerShell 7.3／.NET 7 以上。現有自動下載腳本支援 Windows／Linux amd64，依 [Hugo-165.psd1](../../scripts/Hugo-165.psd1) 固定 Hugo v0.165.0 Standard 並驗證 checksum。網站建置不需要 npm、Node、theme 或 submodule；互動程式的獨立回歸測試使用 Node，見 [testing](testing.md)。
 
 預設建置即使已有 Hugo 快取，仍需網路取得官方 checksum。離線建置可用 `verify.ps1 -HugoPath` 明確指定已驗證的可用 binary；snapshot 驗證與自動化 fixture 可離線執行。
 

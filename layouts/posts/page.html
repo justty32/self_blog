@@ -1,7 +1,10 @@
 {{ define "main" }}
+<div class="reading-progress" aria-hidden="true"><span data-reading-progress></span></div>
+<a class="article-back" href="{{ "posts/" | relURL }}">← 所有文章</a>
+<div class="article-layout">
 <article>
   <header class="page-header">
-    <p class="eyebrow">Post</p>
+    <p class="eyebrow">實作筆記 / {{ .ReadingTime }} 分鐘閱讀</p>
     <h1>{{ .Title }}</h1>
     <p class="page-description">{{ .Description }}</p>
     <div class="meta">
@@ -12,5 +15,12 @@
   </header>
   <div class="prose">{{ .Content }}</div>
 </article>
+{{ if .Fragments.Headings }}
+<aside class="article-toc" aria-label="文章目錄">
+  <p class="toc-title">這篇文章</p>
+  {{ .TableOfContents }}
+</aside>
+{{ end }}
+</div>
 {{ end }}
 

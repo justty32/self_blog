@@ -1,12 +1,14 @@
 <!doctype html>
-<html lang="zh-Hant-TW">
+{{- $defaultStyle := hugo.Data.appearance.default_style | default "grid" -}}
+{{- if not (in (slice "grid" "paper" "deep") $defaultStyle) -}}{{- $defaultStyle = "grid" -}}{{- end -}}
+<html lang="zh-Hant-TW" data-style="{{ $defaultStyle }}" data-motion="full" data-immersive="off">
   <head>
     {{ partial "head.html" . }}
   </head>
   <body>
     <a class="skip-link" href="#main">跳至內容</a>
     {{ partial "header.html" . }}
-    <main id="main" class="site-shell">
+    <main id="main" class="site-shell" tabindex="-1">
       {{ block "main" . }}{{ end }}
     </main>
     {{ partial "footer.html" . }}

@@ -17,6 +17,9 @@
 {{- with partialCached "styles.html" . }}
 <link rel="stylesheet" href="{{ .RelPermalink }}">
 {{- end }}
+{{- $preferences := resources.Get "js/preferences.js" | minify -}}
+{{- $immersive := resources.Get "js/immersive.js" | minify -}}
+<script defer src="{{ $preferences.RelPermalink }}" data-immersive-src="{{ $immersive.RelPermalink }}"></script>
 <meta property="og:type" content="{{ if and .IsPage (eq .Section "posts") }}article{{ else }}website{{ end }}">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $description }}">

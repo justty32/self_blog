@@ -36,4 +36,4 @@ $buildOutput | ForEach-Object { Write-Host $_ }
 $configJson = Invoke-NativeChecked -FilePath $HugoPath -ArgumentList @('config', '--source', $repoRoot, '--environment', 'production', '--format', 'json') -ErrorMessage 'Cannot read Hugo configuration.'
 $config = ($configJson -join "`n") | ConvertFrom-Json
 $result = Assert-SiteArtifact -PublicDir $publicDir -BaseUrl $config.baseurl
-Write-Host "VERIFY PASS — $($result.FileCount) files, $($result.Bytes) bytes, 0 JavaScript"
+Write-Host "VERIFY PASS — $($result.FileCount) files, $($result.Bytes) / $($result.MaximumBytes) bytes, $($result.ScriptCount) approved JavaScript assets"

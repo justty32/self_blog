@@ -1,6 +1,6 @@
 # self_blog
 
-一個輕量的 Hugo 個人部落格。文章以 Markdown 撰寫，建置後提供普通 HTML 與 CSS；讀者端不載入 JavaScript framework。
+一個輕量的 Hugo 個人部落格。文章以 Markdown 撰寫，提供可切換風格與自訂配色；預設以 HTML、CSS 和小型偏好控制器呈現，沉浸互動由讀者選擇開啟，不使用 JavaScript framework。
 
 - 本機檢查：`pwsh ./scripts/verify.ps1`
 - 自動化回歸檢查：`pwsh ./scripts/test-automation.ps1`（離線測試，不會發布）
@@ -9,7 +9,9 @@
 - 工作流檢查：`pwsh ./scripts/verify-workflow-snapshot.ps1`（離線）
 - 文件與架構：[docs/README.md](docs/README.md)
 - 網站檢查回歸：`pwsh ./scripts/test-site-validation.ps1`（離線）
+- 偏好與互動回歸：`node scripts/test-appearance.cjs`（無 npm 相依）
 - 寫作說明：[docs/AUTHORING.md](docs/AUTHORING.md)
+- 全站預設配色：[data/appearance.toml](data/appearance.toml)；操作見[調整網站外觀](docs/AUTHORING.md#調整網站外觀)
 
 正式網址：<https://justty32.github.io/self_blog/>
 

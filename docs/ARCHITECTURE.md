@@ -2,8 +2,9 @@
 
 [文件入口](README.md)｜[作者指南](AUTHORING.md)
 
-網站使用固定的 Hugo Standard，在建置時把 Markdown、Go templates 與 CSS 產生成品。
-訪客只載入 HTML、CSS 與圖片，沒有 JavaScript、theme、遠端 module 或 npm 相依。
+網站使用固定的 Hugo Standard，在建置時把 Markdown、Go templates、CSS 與原生 JavaScript 產生成品。
+內容與導覽不依賴 JavaScript；預設只載入偏好控制器，沉浸互動由讀者明確選擇後載入。
+沒有 theme、遠端 module、外部 runtime 或 npm 建置相依。
 
 ## 內容與網址
 
@@ -25,14 +26,38 @@ CSS 按職責拆在 `assets/css/`：
 
 | 檔案 | 職責 |
 |------|------|
-| `base.css` | 色彩變數、全域排版與基礎元素 |
+| `base.css` | 衍生色彩變數、全域排版與基礎元素 |
 | `layout.css` | 頁面容器、導覽與主要區塊 |
 | `components.css` | 卡片、標籤等元件 |
 | `prose.css` | 文章、程式碼與圖片 |
-| `preferences.css` | light theme、響應式、減少動畫 |
+| `scene.css` | 首頁精密光環、光網與裝飾動畫 |
+| `themes.css` | 光網、閱讀與深空三種美術風格 |
+| `preferences.css` | 響應式、減少動畫與使用者偏好 |
 
-`layouts/_partials/styles.html` 明確指定合併順序。Hugo 將它們合成同一個 `/css/site.css`，
-維持單一 CSS request；不使用瀏覽器端 CSS import，也不需要額外編譯工具。
+`layouts/_partials/styles.html` 明確指定合併順序，並將 `data/appearance.toml` 的預設色
+產生為各風格的 CSS 變數。Hugo 將它們合成同一個 `/css/site.css`，維持單一 CSS request；
+不使用瀏覽器端 CSS import，也不需要額外編譯工具。
+
+## 配色與互動
+
+`data/appearance.toml` 是預設配色的唯一來源；`styles.grid`、`styles.paper`、`styles.deep`
+各自定義 `bg`、`surface`、`text`、`muted`、`primary`、`secondary` 六個完整十六進位色碼。
+頂層 `default_style` 決定未保存個人偏好時的預設風格，停用 JavaScript 時也適用。
+CSS 的 `--seed-*` 變數由這些值生成，邊框、光暈、背景層次與互動粒子由基準色衍生。
+作者如何改預設色、訪客設定的差異見 [作者指南](AUTHORING.md#調整網站外觀)。
+
+`layouts/_partials/appearance.html` 提供外觀面板。`assets/js/preferences.js` 經 Hugo
+壓縮為 `/js/preferences.min.js` 並以 `defer` 載入，管理風格、六色與動態偏好，
+並提供程式碼複製、目錄目前章節標示與文章閱讀進度等輕量工具。
+偏好儲存在 `localStorage` 的 `self-blog-appearance-v1`；每種風格分別保留自訂色，
+重設只清除目前風格的自訂色。儲存不可用時仍能在當頁調整，停用 JavaScript 時保留
+預設風格與可用的內容、導覽。
+
+`assets/js/immersive.js` 壓縮為 `/js/immersive.min.js`。只有按下沉浸模式按鈕後才
+動態載入；不預先下載、不跨頁自動啟用。效果包含三層星場、雙平面星軌、游標局部引力與
+連線、點觸漣漪及卡片追光。效果限於裝飾與互動區域，關閉、頁面隱藏或
+區域離開畫面時停止持續運算。作業系統的 `prefers-reduced-motion` 優先於頁內設定，
+減少動畫時停用沉浸效果與持續動畫。
 
 ## 腳本邊界
 
@@ -64,11 +89,17 @@ pwsh -NoProfile -File scripts/verify-workflow-snapshot.ps1
 pwsh -NoProfile -File scripts/test-workflow-snapshot.ps1
 ```
 
-產物檢查涵蓋基礎輸出、0 JavaScript、站內連結與 base path、RSS／sitemap XML。
+產物檢查涵蓋基礎輸出、本地 JavaScript 白名單、站內連結與 base path、RSS／sitemap XML，
+以及完整部署目錄不超過 5,000,000 bytes 的預算。只允許預期的偏好與沉浸腳本，拒絕
+inline script、事件處理屬性、JavaScript URL 與遠端腳本。
 base path 從 Hugo 實際設定讀取，支援壓縮後不帶引號的 HTML 屬性；不依賴某篇範例文章存在。
-圖片 alt／遠端來源由 render hook 檢查。這些檢查不代表已做效能、可及性或視覺完整驗收。
+圖片 alt／遠端來源由 render hook 檢查。偏好邏輯另以 `node scripts/test-appearance.cjs`
+測試，不需要 npm 安裝；網站建置本身不使用 Node。畫面與互動仍須在瀏覽器檢查手機／桌面、
+三種風格、自訂色、鍵盤、關閉 JavaScript 及減少動畫，不能以建置通過代替。
 
-GitHub Actions 在 Windows／Linux 執行同一套檢查；Pages build 只讀取 repository 與 Pages 設定，
+GitHub Actions 在 Windows／Linux 執行同一套檢查；一般驗證與 Pages build 都包含
+`node scripts/test-appearance.cjs` 的偏好及沉浸生命週期回歸測試，無需 npm 安裝。
+Pages build 只讀取 repository 與 Pages 設定，
 部署 job 才取得 pages write 與 id-token write。`public/` 是建置產物，不提交。
 
 工作流採獨立 `wf/` 快照；網站 build／publish 不讀取它，CI 另外執行快照驗證。

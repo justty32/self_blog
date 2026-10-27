@@ -1,0 +1,30 @@
+# 六個標準色控制整站。使用完整 #RRGGBB；邊線、陰影、光暈由 CSS 混色衍生。
+# 網頁「外觀」面板的調色只保存在該訪客的瀏覽器；修改這裡會更新全站預設。
+default_style = "grid"
+
+[styles.grid]
+name = "光網"
+bg = "#080f18"
+surface = "#101d2a"
+text = "#e2edf3"
+muted = "#9aadb9"
+primary = "#75d9e6"
+secondary = "#678fce"
+
+[styles.paper]
+name = "閱讀"
+bg = "#f3f1eb"
+surface = "#fbfaf6"
+text = "#253640"
+muted = "#586d77"
+primary = "#196777"
+secondary = "#42628e"
+
+[styles.deep]
+name = "深空"
+bg = "#0c0e17"
+surface = "#151a28"
+text = "#e1e5f1"
+muted = "#a3acc5"
+primary = "#a6b8e8"
+secondary = "#77c5ce"

@@ -4,7 +4,7 @@
 
 | 文件 | 用途 |
 |------|------|
-| [AUTHORING.md](AUTHORING.md) | 新增文章、圖片、預覽與發布的現行操作 |
+| [AUTHORING.md](AUTHORING.md) | 新增文章、圖片、調整外觀、預覽與發布的現行操作 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 網站、樣式、腳本與驗證的職責和擴充位置 |
 | [workflows 導入](plan/workflow-import.md) | 非侵入式快照的檔案範圍與驗收 |
 | [來源記錄](../wf/UPSTREAM.md) | workflows pinned commit、授權及更新程序 |

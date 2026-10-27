@@ -140,7 +140,7 @@
   "files": [
     {
       "path": "AGENTS.md",
-      "sha256": "ef0722e46ee2ef1272f6bc7fda416aa09228745bd60cad33acd42d2b26639f6a"
+      "sha256": "fbc1a3cb0c58a182276e1be71188093873e58767388e2e16d5c4e5e02226b201"
     },
     {
       "path": "CLAUDE.md",
@@ -148,7 +148,7 @@
     },
     {
       "path": "wf/INDEX.md",
-      "sha256": "d987718e07c70c8f2e15a1f5c479f6679254154b804940ff72043488db21d315"
+      "sha256": "a5bf9d5be627f0455ccc258ff21443a45aec3cdd7172f544f1c42611f1d08463"
     },
     {
       "path": "wf/LICENSE.workflows-CC0.txt",
@@ -178,11 +178,11 @@
     },
     {
       "path": "wf/workflows/common/code-map.md",
-      "sha256": "bbc92074077304cb395580b43c0ca8702958515ab1d14cdca4e71ea453cf27e9"
+      "sha256": "60ed046fee23c31e768d9629897eb272e64e8634c30bdcc8642d1336771ace5d"
     },
     {
       "path": "wf/workflows/common/conventions.md",
-      "sha256": "f91e7d6f8309a42f87eb44253c5a4f8ff557f8e725c901792f873af86776ac57"
+      "sha256": "e03fccf0505f1e3d312429a8edb49e96b8f3206d07f27913c15d42b844e691aa"
     },
     {
       "path": "wf/workflows/common/gotchas.md",
@@ -208,7 +208,7 @@
     },
     {
       "path": "wf/workflows/dev-env.md",
-      "sha256": "feb7a80047d500189c56533e0b11a4333d41a82e26ccd3deee9b3d15f0810514"
+      "sha256": "711174f9cee74338f96a4f54151d5af6690eab7d0818944d17e7570e8dda7c04"
     },
     {
       "path": "wf/workflows/feature-dev/README.md",
@@ -216,7 +216,7 @@
     },
     {
       "path": "wf/workflows/testing.md",
-      "sha256": "20712d7b71cb3876e9db487f5af9740c435767b0f55864f3722eb16c6a93b093"
+      "sha256": "128e8f0a71fcb907e7520e34e33cf06508e6583b980526b75252a929eb03c80f"
     },
     {
       "path": "wf/workflows/write.md",

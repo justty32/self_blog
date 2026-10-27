@@ -47,6 +47,9 @@ jobs:
         shell: pwsh
         run: ./scripts/test-site-validation.ps1
 
+      - name: Test appearance interactions
+        run: node scripts/test-appearance.cjs
+
       - name: Build and verify
         shell: pwsh
         run: ./scripts/verify.ps1 -ToolCacheRoot '${{ github.workspace }}/.hugo-tool-cache'

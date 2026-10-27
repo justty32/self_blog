@@ -8,12 +8,13 @@
 
 | 變更範圍 | 指令／檢查 | 執行者 |
 |----------|------------|--------|
-| 網站版型、CSS、設定、內容或建置腳本 | `pwsh -NoProfile -File scripts/verify.ps1` | agent |
+| 網站版型、CSS、JavaScript、設定、內容或建置腳本 | `pwsh -NoProfile -File scripts/verify.ps1` | agent；含 5,000,000 bytes 產物預算 |
+| 偏好控制器或沉浸互動 | `node scripts/test-appearance.cjs`，另檢查瀏覽器實際互動與按需載入 | agent；Node 測試不需 npm 安裝 |
 | PowerShell 自動化、快取或發布腳本 | `pwsh -NoProfile -File scripts/test-automation.ps1` | agent；離線 fixture，不發布 |
 | 工作流文件、來源清單或授權檔 | `pwsh -NoProfile -File scripts/verify-workflow-snapshot.ps1` | agent；離線 |
 | 網站產物檢查規則 | `pwsh -NoProfile -File scripts/test-site-validation.ps1` | agent；離線正向與負向 fixture |
 | snapshot verifier 或 manifest 契約 | `pwsh -NoProfile -File scripts/test-workflow-snapshot.ps1` | agent；正向與負向 fixture |
-| 版型或 CSS 外觀 | 預覽手機／桌面、light／dark、鍵盤操作與中文排版 | 有可用瀏覽器時由 agent 檢查，否則列明未驗證項目 |
+| 版型、CSS 或互動外觀 | 預覽手機／桌面、光網／閱讀／深空、自訂色、鍵盤操作、中文排版、停用 JavaScript 與減少動畫；確認沉浸模組初始不下載 | 有可用瀏覽器時由 agent 檢查，否則列明未驗證項目 |
 
 Done when：適用指令回傳 0；必要但無法完成的驗證在 [WAIT_USER](../WAIT_USER.md) 記明原因與通過條件。缺少本機工具時先檢查可用環境，不把所有測試直接交給使用者。
 

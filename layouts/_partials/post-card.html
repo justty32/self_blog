@@ -3,11 +3,12 @@
 <article class="post-card">
   <div class="meta">
     <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006-01-02" }}</time>
+    <span class="card-index">{{ .ReadingTime }} 分鐘閱讀</span>
   </div>
   {{ if eq $heading 3 }}
-  <h3><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+  <h3><a href="{{ .RelPermalink }}">{{ .Title }} <span class="card-arrow" aria-hidden="true">↗</span></a></h3>
   {{ else }}
-  <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+  <h2><a href="{{ .RelPermalink }}">{{ .Title }} <span class="card-arrow" aria-hidden="true">↗</span></a></h2>
   {{ end }}
   <p>{{ .Description }}</p>
   {{ partial "post-tags.html" . }}

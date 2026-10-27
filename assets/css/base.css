@@ -1,54 +1,61 @@
+/* Six editable seeds are the source of every interface colour. */
 :root {
   color-scheme: dark;
-  --bg: #07131f;
-  --surface: #0d1f2e;
-  --surface-2: #102a3a;
-  --card-background: linear-gradient(145deg, rgb(16 42 58 / 92%), rgb(13 31 46 / 92%));
-  --text: #e7f7f5;
-  --muted: #9ab9bd;
-  --accent: #39e6cf;
-  --accent-2: #55bde8;
-  --border: #214353;
-  --code: #061019;
-  --shadow: 0 18px 55px rgb(0 0 0 / 24%);
-  --radius: 14px;
-  --content: 72rem;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg: var(--seed-bg);
+  --surface: var(--seed-surface);
+  --text: var(--seed-text);
+  --muted: var(--seed-muted);
+  --accent: var(--seed-primary);
+  --accent-2: var(--seed-secondary);
+  --surface-2: color-mix(in srgb, var(--surface) 88%, var(--accent));
+  --border: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --border-bright: color-mix(in srgb, var(--accent) 60%, var(--surface));
+  --code: color-mix(in srgb, var(--bg) 75%, var(--surface));
+  --glow: color-mix(in srgb, var(--accent) 12%, transparent);
+  --glow-blue: color-mix(in srgb, var(--accent-2) 6%, transparent);
+  --shadow: 0 18px 60px color-mix(in srgb, var(--bg) 68%, transparent);
+  --card-background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 95%, var(--accent)), var(--surface));
+  --radius: 3px;
+  --content: 76rem;
+  --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
 }
-
 * { box-sizing: border-box; }
-
-html { scroll-behavior: smooth; }
-
+html { scroll-behavior: smooth; scroll-padding-top: 7rem; }
 body {
+  min-width: 280px;
   min-height: 100vh;
   margin: 0;
   color: var(--text);
-  background:
-    linear-gradient(rgb(57 230 207 / 3%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(85 189 232 / 3%) 1px, transparent 1px),
-    radial-gradient(circle at 15% 0%, rgb(57 230 207 / 10%), transparent 35rem),
-    var(--bg);
-  background-size: 32px 32px, 32px 32px, auto, auto;
+  background: radial-gradient(ellipse at 80% 14%, var(--glow-blue), transparent 42rem), var(--bg);
   line-height: 1.75;
   overflow-wrap: anywhere;
+  isolation: isolate;
 }
-
-a { color: var(--accent); text-decoration-thickness: .08em; text-underline-offset: .18em; }
-a:hover { color: #8ef7e9; }
-a:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 4px; border-radius: 3px; }
-
-.skip-link {
+body::before {
+  content: "";
   position: fixed;
-  z-index: 20;
-  top: .75rem;
-  left: .75rem;
-  padding: .55rem .85rem;
-  border-radius: .4rem;
-  color: var(--bg);
-  background: var(--accent);
-  font-weight: 700;
-  text-decoration: none;
-  transform: translateY(calc(-100% - 1.5rem));
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(color-mix(in srgb, var(--accent) 4%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--accent) 4%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(transparent, var(--bg) 15%, transparent 90%);
 }
+a { color: var(--accent); text-decoration-thickness: .07em; text-underline-offset: .22em; transition: color .2s; }
+a:hover { color: color-mix(in srgb, var(--accent) 65%, var(--text)); }
+a, button, summary, input, select { -webkit-tap-highlight-color: transparent; }
+button, input, select { font: inherit; }
+button, summary, select, input[type="color"], input[type="checkbox"] { cursor: pointer; }
+button { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+::selection { color: var(--bg); background: var(--accent); }
+h1, h2, h3, h4 { color: var(--text); line-height: 1.2; text-wrap: balance; }
+h1 { margin: 0; font-size: clamp(2.6rem, 6.8vw, 5.5rem); letter-spacing: -.055em; }
+h2 { margin-block: 0 1.2rem; font-size: clamp(1.5rem, 3vw, 2.2rem); letter-spacing: -.03em; }
+h3 { letter-spacing: -.02em; }
+button, .button { touch-action: manipulation; }
+[hidden] { display: none !important; }
+.skip-link { position: fixed; z-index: 100; top: .75rem; left: .75rem; padding: .7rem 1rem; color: var(--bg); background: var(--accent); font-weight: 700; text-decoration: none; transform: translateY(calc(-100% - 2rem)); }
 .skip-link:focus { color: var(--bg); transform: translateY(0); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

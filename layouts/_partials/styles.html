@@ -1,9 +1,26 @@
 {{- /* Keep cascade order explicit and publish one stylesheet at the stable URL. */ -}}
+{{- $paletteCSS := "" -}}
+{{- range $style := slice "grid" "paper" "deep" -}}
+  {{- $palette := index hugo.Data.appearance.styles $style -}}
+  {{- $paletteCSS = printf "%s:root[data-style=%s]{" $paletteCSS $style -}}
+  {{- range $key := slice "bg" "surface" "text" "muted" "primary" "secondary" -}}
+    {{- $color := index $palette $key -}}
+    {{- if not (findRE `^#[0-9a-fA-F]{6}$` $color) -}}
+      {{- errorf "data/appearance.toml: styles.%s.%s must be a six-digit hex color" $style $key -}}
+    {{- end -}}
+    {{- $paletteCSS = printf "%s--seed-%s:%s;" $paletteCSS $key $color -}}
+  {{- end -}}
+  {{- $paletteCSS = printf "%s}\n" $paletteCSS -}}
+{{- end -}}
+{{- $palettes := resources.FromString "css/generated-palettes.css" $paletteCSS -}}
 {{- $styles := slice
   (resources.Get "css/base.css")
+  $palettes
   (resources.Get "css/layout.css")
   (resources.Get "css/components.css")
   (resources.Get "css/prose.css")
+  (resources.Get "css/scene.css")
+  (resources.Get "css/themes.css")
   (resources.Get "css/preferences.css")
 -}}
 {{- return ($styles | resources.Concat "css/site.css") -}}

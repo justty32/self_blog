@@ -1,6 +1,6 @@
 # self_blog — AI agent 專案備忘
 
-self_blog 是以 Hugo 建置、由 GitHub Pages 提供的個人部落格，文章使用 Markdown，讀者端不載入 JavaScript。本檔是入口，工作細節放在下一層。
+self_blog 是以 Hugo 建置、由 GitHub Pages 提供的個人部落格，文章使用 Markdown。讀者端預設只載入輕量偏好控制器，進階特效由使用者選擇開啟。本檔是入口，工作細節放在下一層。
 
 ## 開場與入口
 
@@ -13,7 +13,7 @@ self_blog 是以 Hugo 建置、由 GitHub Pages 提供的個人部落格，文�
 
 1. 保留使用者既有變更；重構維持行為，編輯文章維持原意。依 [testing](wf/workflows/testing.md) 跑相關驗證，回報實際結果與限制。
 2. commit、push、發布及其他不可逆或對外動作須有使用者授權；已授權的範圍可持續完成，不重複確認。
-3. Hugo 網站維持無 client JavaScript；建置產物不納入版控。工作流程文件不成為網站建置相依。
+3. Hugo 網站的內容與導覽不依賴 JavaScript；進階互動明確選擇後才載入，不引入外部 runtime 相依。建置產物不納入版控，工作流程文件不成為網站建置相依。
 4. 長期知識寫在所屬文件，活狀態只留未完成項目；來源與更新方式見 [UPSTREAM](wf/UPSTREAM.md)。
 
 <!-- wf-kernel v0.6 (2026-09-02); project-adapted minimal snapshot -->
